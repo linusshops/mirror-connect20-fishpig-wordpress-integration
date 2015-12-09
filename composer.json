@@ -1,0 +1,9 @@
+{
+    "name": "linusshops/mirror-connect20-fishpig-wordpress-integration",
+    "version": "3.1.1.18",
+    "type": "magento-module",
+    "homepage": "http://www.magentocommerce.com/magento-connect/wordpress-integration-3795.html",
+    "extra":{
+        "package-xml": "package.xml"
+    }
+}
