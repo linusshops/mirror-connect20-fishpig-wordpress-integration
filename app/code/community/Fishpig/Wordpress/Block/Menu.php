@@ -158,4 +158,18 @@ class Fishpig_Wordpress_Block_Menu extends Mage_Page_Block_Html_Topmenu
 	{
 		return Mage::helper('wordpress')->escapeHtml($data, $allowedTags);
 	}
+	
+	/**
+	 * Retrieve cache key data
+	 *
+	 * @return array
+	*/
+	public function getCacheKeyInfo()
+	{
+		$cacheId = parent::getCacheKeyInfo();
+	
+		$cacheId['menu_id'] = $this->getMenuId();
+	
+		return $cacheId;
+	}
 }

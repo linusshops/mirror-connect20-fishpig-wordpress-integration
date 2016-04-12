@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Fishpig_Wordpress>
-            <version>4.0.0.0</version>
+            <version>4.2.0.0</version>
         </Fishpig_Wordpress>
     </modules>
     <global>
@@ -25,15 +25,6 @@
 					</wordpress>
                 </observers>
             </controller_front_init_routers>
-            <sitemap_sitemap_save_before>
-                <observers>
-					<wordpress>
-						<type>singleton</type>
-						<class>wordpress/observer</class>
-						<method>injectXmlSitemapLinksObserver</method>
-					</wordpress>
-                </observers>
-            </sitemap_sitemap_save_before>
         </events>
 		<blocks>
 			<wordpress>
@@ -53,9 +44,7 @@
 					<association_type><table>wordpress_association_type</table></association_type>
 					<!-- WordPress tables -->
 					<post><table>posts</table></post>
-					<page><table>posts</table></page>
 					<post_meta><table>postmeta</table></post_meta>
-					<page_meta><table>postmeta</table></page_meta>
 					<post_comment><table>comments</table></post_comment>
 					<post_comment_meta><table>commentmeta</table></post_comment_meta>
 					<post_category><table>terms</table></post_category>
@@ -112,6 +101,15 @@
 					</wordpress>
 				</observers>
 			</page_block_html_topmenu_gethtml_before>
+			<controller_front_send_response_before>
+				<observers>
+					<wordpress>
+						<type>singleton</type>
+						<class>wordpress/observer</class>
+						<method>injectWordPressContentObserver</method>
+					</wordpress>
+				</observers>
+			</controller_front_send_response_before>
 		</events>
 		<translate>
 			<modules>
@@ -184,6 +182,24 @@
         	    	</wp_associations>
             	</observers>
             </cms_page_save_after>
+            <adminhtml_block_system_config_init_tab_sections_before>
+            	<observers>
+            		<wp_associations>
+	            		<type>singleton</type>
+    	        		<class>wordpress/observer</class>
+        	    		<method>initWordpressConfigObserver</method>
+        	    	</wp_associations>
+            	</observers>
+            </adminhtml_block_system_config_init_tab_sections_before>
+            <sitemap_sitemap_save_before>
+                <observers>
+					<wordpress>
+						<type>singleton</type>
+						<class>wordpress/observer</class>
+						<method>injectXmlSitemapLinksObserver</method>
+					</wordpress>
+                </observers>
+            </sitemap_sitemap_save_before>
 		</events>
 	</adminhtml>
     <admin>
@@ -238,7 +254,6 @@
 			<before_connect>
 				<tables>
 					<post><table>posts</table></post>
-					<page><table>posts</table></page>
 					<post_meta><table>postmeta</table></post_meta>
 					<page_meta><table>postmeta</table></page_meta>
 					<post_comment><table>comments</table></post_comment>
@@ -276,27 +291,21 @@
 				<lc_taxonomy><block>sidebar_widget_taxonomy</block><template>wordpress/sidebar/widget/taxonomy.phtml</template></lc_taxonomy>
 			</widgets>
 		</sidebar>
-		<post>
-			<types>
-				<post>
-					<taxonomies>category,post_tag</taxonomies>
-				</post>
-				<page>
-					<hierarchical>1</hierarchical>
-				</page>
-			</types>
-		</post>
-		<taxonomy>
-			<category>
-				<label>Categories</label>
-				<singular_label>Category</singular_label>
-				<hierarchical>1</hierarchical>
-			</category>
-			<post_tag>
-				<label>Tags</label>
-				<singular_label>Tag</singular_label>
-				<hierarchical>0</hierarchical>
-			</post_tag>
-		</taxonomy>
+			<core>
+				<globals>
+					<post />
+				</globals>
+			</core>
 	</wordpress>
+	<fishpig>
+		<injection>
+			<Fishpig_Magento_Block_Adminhtml_Extend>
+				<Fishpig_Wordpress>
+					<Block_Adminhtml_Extend>
+						<ignore />
+					</Block_Adminhtml_Extend>
+				</Fishpig_Wordpress>
+			</Fishpig_Magento_Block_Adminhtml_Extend>
+		</injection>
+	</fishpig>
 </config>

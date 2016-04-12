@@ -50,7 +50,20 @@ class Fishpig_Wordpress_Model_Resource_Post_Collection extends Fishpig_Wordpress
 		$this->_map['fields']['post_type'] = 'main_table.post_type';
 		$this->_map['fields']['post_status'] = 'main_table.post_status';
 	}
-	
+
+    /**
+     * Init collection select
+     *
+     * @return Mage_Core_Model_Resource_Db_Collection_Abstract
+     */
+    protected function _initSelect()
+    {
+	    parent::_initSelect();
+
+		return $this->setOrder('main_table.menu_order', 'ASC')
+			->setOrder('main_table.post_date', 'DESC');
+    }
+    	
 	/**
 	 * Add the permalink data before loading the collection
 	 *
@@ -83,11 +96,15 @@ class Fishpig_Wordpress_Model_Resource_Post_Collection extends Fishpig_Wordpress
 		}
 
 		if (count($this->_postTypes) === 1) {
-			if ($this->_postTypes[0] !== '*') {
-				$this->addFieldToFilter('post_type', $this->_postTypes[0]);
+			if ($this->_postTypes[0] === '*') {
+				$this->_postTypes = array();
 			}
 		}
-		else if (count($this->_postTypes) > 1) {
+
+		if (count($this->_postTypes) === 0) {
+			$this->addFieldToFilter('post_type', array('in' => array_keys(Mage::helper('wordpress/app')->getPostTypes())));
+		}
+		else {
 			$this->addFieldToFilter('post_type', array('in' => $this->_postTypes));
 		}
 
@@ -217,7 +234,6 @@ class Fishpig_Wordpress_Model_Resource_Post_Collection extends Fishpig_Wordpress
 		return $this;
 	}
 	
-	
 	/**
 	 * Add a post type filter to the collection
 	 *
@@ -282,33 +298,15 @@ class Fishpig_Wordpress_Model_Resource_Post_Collection extends Fishpig_Wordpress
 	}
 	
 	/**
-	 * Filter the collection by an author ID
-	 *
-	 * @param int $authorId
-	 */
-	public function addAuthorIdFilter($authorId)
-	{
-		return $this->addFieldToFilter('post_author', $authorId);
-	}
-	
-	/**
 	 * Orders the collection by post date
 	 *
 	 * @param string $dir
 	 */
 	public function setOrderByPostDate($dir = 'desc')
 	{
+		$this->_orders = array();
+		
 		return $this->setOrder('post_date', $dir);
-	}
-	
-	/**
-	 * Orders the collection by comment count
-	 *
-	 * @param string $dir
-	 */
-	public function setOrderByCommentCount($dir = 'desc')
-	{
-		return $this->setOrder('comment_count', $dir);
 	}
 	
 	/**
@@ -439,19 +437,6 @@ class Fishpig_Wordpress_Model_Resource_Post_Collection extends Fishpig_Wordpress
 	public function addPostParentIdFilter($postParentId)
 	{
 		$this->getSelect()->where("main_table.post_parent=?", $postParentId);
-		
-		return $this;
-	}
-	
-	/**
-	 * Order the collection by the menu order field
-	 *
-	 * @param string $dir
-	 * @return
-	 */
-	public function orderByMenuOrder($dir = 'asc')
-	{
-		$this->getSelect()->order('menu_order ' . $dir);
 		
 		return $this;
 	}

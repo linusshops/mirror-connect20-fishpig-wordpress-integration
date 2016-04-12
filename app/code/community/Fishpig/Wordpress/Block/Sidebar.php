@@ -155,7 +155,7 @@ class Fishpig_Wordpress_Block_Sidebar extends Fishpig_Wordpress_Block_Abstract
 	 */
 	public function getRealWidgetArea()
 	{
-		if (!Mage::helper('wordpress')->isPluginEnabled('customsidebars')) {
+		if (!Mage::helper('wordpress')->isPluginEnabled('custom-sidebars/customsidebars.php')) {
 			return $this->getWidgetArea();
 		}
 
@@ -187,7 +187,7 @@ class Fishpig_Wordpress_Block_Sidebar extends Fishpig_Wordpress_Block_Abstract
 			}
 			
 			# Single post by category
-			if ($categoryIdResults = $post->getResource()->getParentCategoryIdsByPostIds(array($post->getId()))) {
+			if ($categoryIdResults = $post->getResource()->getParentTermsByPostId($post->getId(), $taxonomy = 'category')) {
 				$categoryIdResults = array_pop($categoryIdResults);
 
 				if (isset($categoryIdResults['category_ids'])) {
@@ -204,8 +204,8 @@ class Fishpig_Wordpress_Block_Sidebar extends Fishpig_Wordpress_Block_Abstract
 				return $settings['post_type_archive'][$postType->getPostType()][$this->getWidgetArea()];
 			}
 		}
-		else if ($category = Mage::registry('wordpress_category')) {
-			if ($widgetArea = $this->_getArrayValue($settings, 'category_archive/' . $category->getId() . '/' . $this->getWidgetArea())) {
+		else if ($term = Mage::registry('wordpress_term')) {
+			if ($widgetArea = $this->_getArrayValue($settings, $term->getTaxonomy() . '_archive/' . $term->getId() . '/' . $this->getWidgetArea())) {
 				return $widgetArea;
 			}
 		}

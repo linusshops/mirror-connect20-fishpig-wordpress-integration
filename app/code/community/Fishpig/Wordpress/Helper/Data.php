@@ -130,8 +130,8 @@ class Fishpig_Wordpress_Helper_Data extends Fishpig_Wordpress_Helper_Abstract
 	 */
 	public function isEnabled()
 	{
-		return Mage::helper('wordpress/config')->getConfigFlag('wordpress/module/enabled')
-			&& !Mage::getStoreConfig('advanced/modules_disable_output/Fishpig_Wordpress');
+		return Mage::getStoreConfigFlag('wordpress/module/enabled', Mage::helper('wordpress/app')->getStore()->getId())
+			&& !Mage::getStoreConfig('advanced/modules_disable_output/Fishpig_Wordpress', Mage::helper('wordpress/app')->getStore()->getId());
 	}
 	
 	/**
@@ -217,57 +217,7 @@ class Fishpig_Wordpress_Helper_Data extends Fishpig_Wordpress_Helper_Abstract
 	 */
 	public function isPluginEnabled($name)
 	{
-		$plugins = array();
-
-		if ($plugins = $this->getWpOption('active_plugins')) {
-			$plugins = unserialize($plugins);
-		}
-		
-		if ($this->isWordPressMU() && Mage::helper('wpmultisite')->canRun()) {
-			if ($networkPlugins = Mage::helper('wpmultisite')->getWpSiteOption('active_sitewide_plugins')) {
-				$plugins += (array)unserialize($networkPlugins);
-			}
-		}
-
-		if ($plugins) {
-			foreach($plugins as $a => $b) {
-				if (strpos($a . '-' . $b, $name) !== false) {
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-	
-	public function enablePlugin($plugin)
-	{
-		if ($this->isPluginEnabled($plugin)) {
-			return true;
-		}
-		
-		if ($db = Mage::helper('wordpress/app')->getDbConnection()) {
-			if ($plugins = $this->getWpOption('active_plugins')) {
-				$db->update(
-					Mage::getSingleton('core/resource')->getTableName('wordpress/option'),
-					array('option_value' => serialize(array_merge(unserialize($plugins), array($plugin)))),
-					$db->quoteInto('option_name=?', 'active_plugins')
-				);
-			}
-			else {
-				$db->insert(
-					Mage::getSingleton('core/resource')->getTableName('wordpress/option'),
-					array(
-						'option_name' => 'active_plugins',
-						'option_value' => serialize(array($plugin))
-					)
-				);
-			}
-			
-			return true;			
-		}
-		
-		return false;
+		return Mage::helper('wordpress/plugin')->isEnabled($name);
 	}
 	
 	/**
@@ -277,7 +227,7 @@ class Fishpig_Wordpress_Helper_Data extends Fishpig_Wordpress_Helper_Abstract
 	 */
 	public function forceSingleStore()
 	{
-		return Mage::getStoreConfigFlag('wordpress/integration/force_single_store');
+		return Mage::getStoreConfigFlag('wordpress/integration/force_single_store', Mage::helper('wordpress/app')->getStore()->getId());
 	}
 	
 	/**
@@ -291,7 +241,7 @@ class Fishpig_Wordpress_Helper_Data extends Fishpig_Wordpress_Helper_Abstract
 			$this->_cache('is_wpmu', false);
 			
 			if ($this->isWordPressMUInstalled()) {
-				$this->_cache('is_wpmu', Mage::helper('wpmultisite')->canRun());
+				$this->_cache('is_wpmu', Mage::helper('wp_addon_multisite')->canRun());
 			}
 		}
 		
@@ -388,7 +338,7 @@ class Fishpig_Wordpress_Helper_Data extends Fishpig_Wordpress_Helper_Abstract
 	 */
 	public function getRawWordPressPath()
 	{
-		$path = rtrim($this->getConfigValue('wordpress/integration/path'), DS);
+		$path = rtrim(Mage::getStoreConfig('wordpress/integration/path', Mage::helper('wordpress/app')->getStore()->getId()), DS);
 
 		if ($path === '') {
 			return false;

@@ -1,9 +1,9 @@
 <?php
 /**
- * @category    Fishpig
- * @package     Fishpig_Wordpress
- * @license     http://fishpig.co.uk/license.txt
- * @author      Ben Tideswell <help@fishpig.co.uk>
+ * @category Fishpig
+ * @package Fishpig_Wordpress
+ * @license http://fishpig.co.uk/license.txt
+ * @author Ben Tideswell <help@fishpig.co.uk>
  */
  
 class Fishpig_Wordpress_Model_Observer extends Varien_Object
@@ -119,9 +119,8 @@ class Fishpig_Wordpress_Model_Observer extends Varien_Object
 			'daily',
 			'1.0'
 		);
-					
+
 		$posts = Mage::getResourceModel('wordpress/post_collection')
-			->setFlag('include_all_post_types', true)
 			->addIsViewableFilter()
 			->setOrderByPostDate()
 			->load();
@@ -135,21 +134,6 @@ class Fishpig_Wordpress_Model_Observer extends Varien_Object
 				'0.5'
 			);
 		}
-		
-		$pages = Mage::getResourceModel('wordpress/page_collection')
-			->addIsViewableFilter()
-			->setOrderByPostDate()
-			->load();
-			
-		foreach($pages as $page) {
-			$xml .= sprintf(
-				'<url><loc>%s</loc><lastmod>%s</lastmod><changefreq>%s</changefreq><priority>%.1f</priority></url>',
-				htmlspecialchars($page->getUrl()),
-				$page->getPostModifiedDate('Y-m-d'),
-				'monthly',
-				'0.8'
-			);
-		}
 
 		$xml .= '</urlset>';
 		
@@ -157,6 +141,17 @@ class Fishpig_Wordpress_Model_Observer extends Varien_Object
 
 		$appEmulation->stopEnvironmentEmulation($initialEnvironmentInfo);
 
+		return $this;
+	}
+
+	/**
+	 * Initialise the configuration for the extension
+	 *
+	 * @param Varien_Event_Observer $observer
+	 * @return $this
+	 */		
+	public function initWordpressConfigObserver(Varien_Event_Observer $observer)
+	{
 		return $this;
 	}
 	
@@ -176,5 +171,61 @@ class Fishpig_Wordpress_Model_Observer extends Varien_Object
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Inject content (JS, CSS) from WordPress
+	 *
+	 * @param Varien_Event_Observer $observer
+	 * @return $this
+	 **/
+	public function injectWordPressContentObserver(Varien_Event_Observer $observer)
+	{
+		if (!$this->_observerCanRun(__METHOD__)) {
+			return $this;
+		}
+
+		$modulesConfigObjects = Mage::getConfig()->getNode('wordpress/core/modules');
+		
+		if (!$modulesConfigObjects) {
+			return $this;
+		}
+		
+		$modules = array_keys($modulesConfigObjects->asArray());
+		$content = array();
+
+		foreach($modules as $module) {
+			if ($code = trim(Mage::getSingleton($module . '/observer')->getHeadFooterContent())) {
+				$content[] = $code;
+			}
+		}
+		
+		if (count($content) === 0) {
+			return $this;
+		}
+		
+		$bodyHtml = $observer->getEvent()
+			->getFront()
+				->getResponse()
+					->getBody();
+
+		if (strpos($bodyHtml, 'jquery') === false) {
+			$baseUrl = Mage::helper('wordpress')->getBaseUrl();
+			$jsTemplate = '<script type="text/javascript" src="%s"></script>';
+
+			if (strpos($bodyHtml, 'underscore') === false) {
+				array_unshift($content, sprintf($jsTemplate, $baseUrl . 'wp-includes/js/underscore.min.js?ver=1.6.0'));
+			}
+			
+			array_unshift($content, sprintf($jsTemplate, $baseUrl . 'wp-includes/js/jquery/jquery-migrate.min.js?ver=1.2.1'));
+			array_unshift($content, sprintf($jsTemplate, $baseUrl . 'wp-includes/js/jquery/jquery.js?ver=1.11.3'));
+		}
+
+		$observer->getEvent()
+			->getFront()
+				->getResponse()
+					->setBody(str_replace('</body>', implode('', $content) . '</body>', $bodyHtml));
+		
+		return $this;
 	}
 }

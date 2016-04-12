@@ -11,9 +11,9 @@
 	<?php $categoryString = $this->getTermsAsHtml($post, 'category') ?>
 	<?php echo Mage::helper('wordpress/social')->getButtons($post) ?>
 	<p class="post-meta details">
-	<?php if ($tagString): ?>
+	<?php if ($categoryString && $tagString): ?>
 		<?php echo stripslashes($this->__('This entry was posted in %s and tagged %s on %s<span class=\"by-author\"> by %s</span>.', $categoryString, $tagString, $post->getPostDate(), $post->getAuthor()->getDisplayName())) ?>
-	<?php else: ?>
+	<?php elseif ($categoryString): ?>
 		<?php echo stripslashes($this->__('This entry was posted in %s on %s<span class=\"by-author\"> by %s</span>.', $categoryString, $post->getPostDate(), $post->getAuthor()->getDisplayName())) ?>
 	<?php endif; ?>
 	<?php if ($this->canDisplayPreviousNextLinks()): ?>

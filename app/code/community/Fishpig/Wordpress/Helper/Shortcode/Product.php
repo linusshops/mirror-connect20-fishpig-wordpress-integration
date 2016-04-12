@@ -91,13 +91,14 @@ class Fishpig_Wordpress_Helper_Shortcode_Product extends Fishpig_Wordpress_Helpe
 					}
 					
 					$template = $params->getTemplate() ? $params->getTemplate() : 'wordpress/shortcode/product.phtml';
-						
+
 					$html = $this->_createBlock('catalog/product')
 						->setTemplate($template)
 						->setItems($collection)
 						->setProducts($collection)
 						->setProduct($collection->getFirstItem())
 						->setProductId($collection->getFirstItem()->getId())
+						->setShortcodeParams($params)
 						->toHtml();
 
 					$content = str_replace($shortcode->getHtml(), $html, $content);

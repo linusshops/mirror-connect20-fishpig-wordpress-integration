@@ -49,10 +49,35 @@ class Fishpig_Wordpress_Block_Sidebar_Widget_Taxonomy extends Fishpig_Wordpress_
 	public function isCurrentTerm($term)
 	{
 		if ($this->getCurrentTerm()) {
-			return (int)$term->getId() === (int)$this->getCurrentTerm()->getId();
+			if ((int)$term->getId() === (int)$this->getCurrentTerm()->getId()) {
+				return true;
+			}
+			
+			return in_array($term->getId(), $this->getActiveIds());
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Get an array of active IDs
+	 *
+	 * @return array
+	 */
+	public function getActiveIds()
+	{
+		if (!$this->hasActiveIds() && ($current = $this->getCurrentTerm())) {
+			$activeIds = array($current->getId());
+			
+			while($current->getParentTerm() !== false) {
+				$current = $current->getParentTerm();
+				$activeIds[] = $current->getId();
+			}
+
+			$this->setActiveIds($activeIds);
+		}
+		
+		return $this->_getData('active_ids') ? $this->_getData('active_ids') : array();
 	}
 	
 	/**
@@ -97,6 +122,9 @@ class Fishpig_Wordpress_Block_Sidebar_Widget_Taxonomy extends Fishpig_Wordpress_
 	 */
 	public function drawChildItem(Fishpig_Wordpress_Model_Term $term, $level = 0)
 	{
+		$originalLevel = $this->getLevel();
+		$this->setLevel($level);
+		
 		if ($this->getRendererTemplate()) {
 			$this->setTemplate($this->getRendererTemplate());
 		}
@@ -104,7 +132,11 @@ class Fishpig_Wordpress_Block_Sidebar_Widget_Taxonomy extends Fishpig_Wordpress_
 			$this->setTemplate('wordpress/sidebar/widget/taxonomy/renderer.phtml');
 		}
 
-		return $this->setTerm($term)->toHtml();	
+		$html = $this->setTerm($term)->toHtml();	
+		
+		$this->setLevel($originalLevel);
+		
+		return $html;
 	}
 	
 	/**

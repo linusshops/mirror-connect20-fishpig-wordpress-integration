@@ -53,10 +53,7 @@ class Fishpig_Wordpress_Block_Sidebar_Widget_Pages extends Fishpig_Wordpress_Blo
 			$posts->addPostParentIdFilter(0);
 		}
 		
-		return $posts->addIsViewableFilter()
-			->orderByMenuOrder()
-			->setOrderByPostDate()
-			->load();
+		return $posts->addIsViewableFilter()->load();
 	}
 	
 	/**

@@ -26,8 +26,6 @@ class Fishpig_Wordpress_Block_Author_View extends Fishpig_Wordpress_Block_Post_L
 	protected function _getPostCollection()
 	{
 		return parent::_getPostCollection()
-			->addAuthorIdFilter(
-				$this->getAuthor()->getId()
-			);
+			->addFieldToFilter('post_author', $this->getAuthor()->getId());
 	}
 }

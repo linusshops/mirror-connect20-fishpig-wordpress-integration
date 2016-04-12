@@ -101,14 +101,27 @@ class Fishpig_Wordpress_Model_Post extends Fishpig_Wordpress_Model_Abstract
 	 *
 	 * @return string
 	 */
-	public function getPostExcerpt($includeSuffix = true)
+	public function getPostExcerpt($maxWords = 0)
 	{
 		if (!$this->getData('post_excerpt')) {
-			$excerpt = $this->hasMoreTag()
-				? $this->_getPostTeaser($includeSuffix)
-				: $this->getPostContent('excerpt');
+			if ($this->hasMoreTag()) {
+				$this->setPostExcerpt($this->_getPostTeaser(true));
+			}
+			else if ((int)$maxWords > 1) {
+				$excerpt = explode(' ', trim(strip_tags($this->_getData('post_content'))));
+
+				if (count($excerpt) > $maxWords) {
+					$excerpt = rtrim(implode(' ', array_slice($excerpt, 0, $maxWords)), "!@£$%^&*()_-+=[{]};:'\",<.>/? ") . '...';
+				}
+				else {
+					$excerpt = implode(' ', $excerpt);
+				}
 				
-			$this->setPostExcerpt($excerpt);
+				$this->setPostExcerpt($excerpt);
+			}
+			else {
+				$this->setPostExcerpt($this->getPostContent('excerpt'));
+			}
 		}			
 
 		return $this->getData('post_excerpt');
@@ -155,7 +168,30 @@ class Fishpig_Wordpress_Model_Post extends Fishpig_Wordpress_Model_Abstract
 		
 		return null;
 	}
+
+	public function getParentTerm($taxonomy)
+	{
+		$terms = $this->getTermCollection($taxonomy)
+			->setPageSize(1)
+			->setCurPage(1)
+			->load();
+		
+		return count($terms) > 0 ? $terms->getFirstItem() : false;
+	}
 	
+	/**
+	 * Get a collection of terms by the taxonomy
+	 *
+	 * @param string $taxonomy
+	 * @return Fishpig_Wordpress_Model_Resource_Term_Collection
+	 */
+	public function getTermCollection($taxonomy)
+	{
+		return Mage::getResourceModel('wordpress/term_collection')
+			->addTaxonomyFilter($taxonomy)
+			->addPostIdFilter($this->getId());
+	}	
+
 	/**
 	 * Retrieve a collection of all parent categories
 	 *
@@ -163,15 +199,10 @@ class Fishpig_Wordpress_Model_Post extends Fishpig_Wordpress_Model_Abstract
 	 */
 	public function getParentCategories()
 	{
+		return $this->getTermCollection('category');
 		return Mage::getResourceModel('wordpress/term_collection')
 			->addTaxonomyFilter('post_category')
 			->addFieldToFilter('main_table.term_id', array('in' => $this->getCategoryIds()));
-			
-		if (!$this->hasData('parent_categories')) {
-			$this->setParentCategories($this->getResource()->getParentCategories($this));
-		}
-		
-		return $this->_getData('parent_categories');
 	}
 
 	/**
@@ -181,9 +212,7 @@ class Fishpig_Wordpress_Model_Post extends Fishpig_Wordpress_Model_Abstract
 	 */
 	public function getTags()
 	{
-		return Mage::getResourceModel('wordpress/term_collection')
-			->addTaxonomyFilter('post_tag')
-			->addPostIdFilter($this->getId());
+		return $this->getTermCollection('post_tag');
 	}
 
 	/**
@@ -250,21 +279,6 @@ class Fishpig_Wordpress_Model_Post extends Fishpig_Wordpress_Model_Abstract
 		
 		return $this->_getData('next_post');
 	}
-	
-	/**
-	 * Get a collection of terms by the taxonomy
-	 *
-	 * @param string $taxonomy
-	 * @return Fishpig_Wordpress_Model_Resource_Term_Collection
-	 */
-	public function getTaxonomyCollection($taxonomy)
-	{
-		return Mage::getResourceModel('wordpress/term_collection')
-			->addTaxonomyFilter($taxonomy)
-			->addPostIdFilter($this->getId());
-	}
-	
-
 
 	public function isType($type)
 	{
@@ -274,10 +288,18 @@ class Fishpig_Wordpress_Model_Post extends Fishpig_Wordpress_Model_Abstract
 	public function getTypeInstance()
 	{
 		if (!$this->hasTypeInstance() && $this->getPostType()) {
-			if ($postTypes = Mage::helper('wordpress/app')->getPostTypes()) {
-				$this->setTypeInstance(
-					isset($postTypes[$this->getPostType()]) ? $postTypes[$this->getPostType()] : false
-				);
+			if ($this->getPostType() === 'revision') {
+				if ($this->getParentPost()) {
+					$this->setTypeInstance(
+						$this->getParentPost()->getTypeInstance()
+					);
+				}
+			}
+			else if ($typeInstance = Mage::helper('wordpress/app')->getPostType($this->getPostType())) {
+				$this->setTypeInstance($typeInstance);
+			}
+			else {
+				$this->setTypeInstance(Mage::helper('wordpress/app')->getPostType('post'));
 			}
 		}
 		
@@ -514,22 +536,49 @@ class Fishpig_Wordpress_Model_Post extends Fishpig_Wordpress_Model_Abstract
 		if (!$this->hasUrl()) {
 			$this->setUrl($this->getGuid());
 			
-			if ($this->getTypeInstance()->isHierarchical()) {
+			if ($this->hasPermalink()) {
+				$this->setUrl(Mage::helper('wordpress')->getUrl(
+					$this->_urlEncode($this->_getData('permalink'))
+				));
+			}
+			else if ($this->getTypeInstance()->isHierarchical()) {
 				if ($uris = $this->getTypeInstance()->getAllRoutes()) {
 					if (isset($uris[$this->getId()])) {
 						$this->setUrl(Mage::helper('wordpress')->getUrl($uris[$this->getId()] . '/'));
 					}
 				}
 			}
-			else if ($this->hasPermalink()) {
-				$this->setUrl(Mage::helper('wordpress')->getUrl($this->_getData('permalink')));
-			}
 		}
 		
 		return $this->_getData('url');
 	}
 
+	/**
+	 * Encode the URL, ignoring '/' character
+	 *
+	 * @param string $url
+	 * @return string
+	 */
+	protected function _urlEncode($url)
+	{
+		if (strpos($url, '/') !== false) {
+			$parts = explode('/', $url);
+
+			foreach($parts as $key => $value) {
+				$parts[$key] = urlencode($value);
+			}
+			
+			return implode('/', $parts);
+		}
+		
+		return urlencode($url);
+	}
 	
+	/**
+	 * Get the parent ID of the post
+	 *
+	 * @return int
+	 */
 	public function getParentId()
 	{
 		return (int)$this->_getData('post_parent');
@@ -547,7 +596,7 @@ class Fishpig_Wordpress_Model_Post extends Fishpig_Wordpress_Model_Abstract
 
 			if ($this->getParentId()) {
 				$parent = Mage::getModel('wordpress/post')
-					->setPostType($this->getPostType())
+					->setPostType($this->getPostType() === 'revision' ? '*' : $this->getPostType())
 					->load($this->getParentId());
 				
 				if ($parent->getId()) {
@@ -567,8 +616,7 @@ class Fishpig_Wordpress_Model_Post extends Fishpig_Wordpress_Model_Abstract
 	public function getChildrenPosts()
 	{
 		return $this->getCollection()
-			->addPostParentIdFilter($this->getId())
-			->orderByMenuOrder();
+			->addPostParentIdFilter($this->getId());
 	}
 	
 	/**
@@ -606,5 +654,15 @@ class Fishpig_Wordpress_Model_Post extends Fishpig_Wordpress_Model_Abstract
 	public function getChildren()
 	{
 		return $this->getChildrenPosts();
+	}
+	
+	public function isHomepagePage()
+	{
+		return $this->isType('page') && (int)$this->getId() === (int)Mage::helper('wordpress/router')->getHomepagePageId();
+	}
+	
+	public function isBlogListingPage()
+	{
+		return $this->isType('page') && (int)$this->getId() === (int)Mage::helper('wordpress/router')->getBlogPageId();
 	}
 }

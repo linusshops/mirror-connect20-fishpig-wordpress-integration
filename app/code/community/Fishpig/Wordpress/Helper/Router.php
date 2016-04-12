@@ -37,9 +37,9 @@ class Fishpig_Wordpress_Helper_Router extends Fishpig_Wordpress_Helper_Abstract
 		$pathInfo = explode('/', $pathInfo);
 		
 		// Clean off pager and feed parts
-		if (($key = array_search($this->getPostPagerVar(), $pathInfo)) !== false) {
+		if (($key = array_search('page', $pathInfo)) !== false) {
 			if (isset($pathInfo[($key+1)]) && preg_match("/[0-9]{1,}/", $pathInfo[($key+1)])) {
-				$this->getRequest()->setParam($this->getPostPagerVar(), $pathInfo[($key+1)]);
+				$this->getRequest()->setParam('page', $pathInfo[($key+1)]);
 				unset($pathInfo[($key+1)]);
 				unset($pathInfo[$key]);
 				
@@ -48,30 +48,21 @@ class Fishpig_Wordpress_Helper_Router extends Fishpig_Wordpress_Helper_Abstract
 		}
 		
 		// Clean off feed and trackback variable
-		if (($key = array_search($this->getFeedVar(), $pathInfo)) !== false) {
+		if (($key = array_search('feed', $pathInfo)) !== false) {
 			unset($pathInfo[$key]);
 			
 			if (isset($pathInfo[$key+1])) {
-				$type = $pathInfo[$key+1];
 				unset($pathInfo[$key+1]);
 			}
-			else {
-				$type = 'rss2';
-			}
-			
-			$this->getRequest()->setParam($this->getFeedVar(), $type);
+
+			$this->getRequest()->setParam('feed', 'rss2');
+			$this->getRequest()->setParam('feed_type', 'rss2');
 		}
 
-		if (($key = array_search($this->getTrackbackVar(), $pathInfo)) !== false) {
-			unset($pathInfo[$key]);
-			$pathInfo = array_values($pathInfo);
-			$this->getRequest()->setParam($this->getTrackbackVar(), 1);
-		}
-		
 		// Remove comments pager variable
 		foreach($pathInfo as $i => $part) {
 			$results = array();
-			if (preg_match("/" . sprintf($this->getCommentPagerVarFormat(), '([0-9]{1,})') . "/", $part, $results)) {
+			if (preg_match("/" . sprintf('^comment-page-%s$', '([0-9]{1,})') . "/", $part, $results)) {
 				if (isset($results[1])) {
 					unset($pathInfo[$i]);
 				}
@@ -79,7 +70,7 @@ class Fishpig_Wordpress_Helper_Router extends Fishpig_Wordpress_Helper_Abstract
 		}
 		
 		if (count($pathInfo) == 1 && preg_match("/^[0-9]{1,8}$/", $pathInfo[0])) {
-			$this->getRequest()->setParam(Mage::helper('wordpress/post')->getPostIdVar(), $pathInfo[0]);
+			$this->getRequest()->setParam('p', $pathInfo[0]);
 			
 			array_shift($pathInfo);
 		}
@@ -90,17 +81,6 @@ class Fishpig_Wordpress_Helper_Router extends Fishpig_Wordpress_Helper_Abstract
 		
 		return $uri;
 	}
-	
-	/**
-	 * Determine whether the URI is a blog post URI
-	 *
-	 * @param string $uri
-	 * @return bool
-	 */
-	public function isPostUri($uri)
-	{
-		return Mage::helper('wordpress/post')->isPostUri($uri);
-	}
 
 	/**
 	 * Retrieve the page ID set via the query string
@@ -110,84 +90,6 @@ class Fishpig_Wordpress_Helper_Router extends Fishpig_Wordpress_Helper_Abstract
 	public function getPageId()
 	{
 		return $this->getRequest()->getParam('page_id');
-	}
-	
-	/**
-	 * Determine whether the URI is a blog post attachment URI
-	 *
-	 * @param string $uri
-	 * @return bool
-	 */
-	public function isPostAttachmentUri($uri)
-	{
-		return Mage::helper('wordpress/post')->isPostAttachmentUri($uri);
-	}
-
-		
-	/**
-	 * Retrieve the Regex pattern used to identify a permalink string
-	 * Allows for inclusion of other locale characters
-	 *
-	 * @return string
-	 */
-	public function getPermalinkStringRegex($extra = '')
-	{
-		return '[a-z0-9' . $this->getSpecialUriChars() . '_\-\.' . $extra . ']{1,}';
-	}
-
-	/**
-	 * Retrieve an array of special chars that can be used in a URI
-	 *
-	 * @return array
-	 */
-	public function getSpecialUriChars()
-	{
-		$chars = array('‘', '’','“', '”', '–', '—', '`');
-		
-		// Cryllic
-//		$chars[] = '\p{Cyrillic}';
-			
-		return implode('', $chars);	
-	}
-	
-	/**
-	 * Retrieve the format variable for the comment pager
-	 *
-	 * @return string
-	 */
-	public function getCommentPagerVarFormat()
-	{
-		return '^comment-page-%s$';
-	}
-	
-	/**
-	 * Retrieve the post pager variable
-	 *
-	 * @return string
-	 */
-	public function getPostPagerVar()
-	{
-		return 'page';
-	}
-	
-	/**
-	 * Retrieve the feed variable
-	 *
-	 * @return string
-	 */
-	public function getFeedVar()
-	{
-		return 'feed';
-	}
-	
-	/**
-	 * Retrieve the trackback variable
-	 *
-	 * @return string
-	 */
-	public function getTrackbackVar()
-	{
-		return 'trackback';
 	}
 	
 	/**
@@ -368,5 +270,4 @@ class Fishpig_Wordpress_Helper_Router extends Fishpig_Wordpress_Helper_Abstract
 		
 		return false;
 	}
-
 }

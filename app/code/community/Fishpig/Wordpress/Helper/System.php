@@ -8,6 +8,18 @@
 
 class Fishpig_Wordpress_Helper_System extends Fishpig_Wordpress_Helper_Abstract
 {
+	/**
+	 * Useragent for CURL request
+	 *
+	 * @var string
+	 */
+	const CURL_USERAGENT = 'FishPig-MagentoWordPressIntegration';
+	
+	/**
+	 * Cache for the integration results
+	 *
+	 * @var array
+	 */
 	protected $_integrationTestResults = null;
 	
 	/**
@@ -19,6 +31,10 @@ class Fishpig_Wordpress_Helper_System extends Fishpig_Wordpress_Helper_Abstract
 	{
 		if (!Mage::helper('wordpress')->isEnabled()) {
 			return false;
+		}
+		
+		if ($this->_integrationTestResults !== null) {
+			return $this->_integrationTestResults;
 		}
 
 		$this->_integrationTestResults = array();
@@ -33,10 +49,12 @@ class Fishpig_Wordpress_Helper_System extends Fishpig_Wordpress_Helper_Abstract
 				$this->applyTest('_validatePlugins', array());
 				$this->applyTest('_validatePermalinks');
 				$this->applyTest('_validateHtaccess');
-				
+				$this->applyTest('_validateL10nPermissions');
+
 				Mage::dispatchEvent('wordpress_integration_tests_after', array('helper' => $this));
 			}
 		}
+
 
 		return $this->_integrationTestResults;
 	}
@@ -78,15 +96,14 @@ class Fishpig_Wordpress_Helper_System extends Fishpig_Wordpress_Helper_Abstract
 			);
 		}
 		else if ($mage !== $home) {
-			throw Fishpig_Wordpress_Exception::warning('Home URL', 
+			throw Fishpig_Wordpress_Exception::error('Home URL', 
 				stripslashes(Mage::helper('wordpress')->__('Your WordPress home URL %s is invalid.  Please fix the <a href=\"%s\">home option</a>.', $home,  'http://codex.wordpress.org/Changing_The_Site_URL" target="_blank'))
 				. $this->__(' Change to %s', $mage)
 			);
 		}
 
-
 		if ($helper->getBlogRoute() && is_dir(Mage::getBaseDir() . DS . $helper->getBlogRoute())) {
-			throw Fishpig_Wordpress_Exception::warning('Home URL', 
+			throw Fishpig_Wordpress_Exception::error('Home URL', 
 				stripslashes(Mage::helper('wordpress')->__("A '%s' directory exists in your Magento root that will stop your integrated WordPress from displaying. You must delete this before your blog will display.", $helper->getBlogRoute()))
 			);
 		}
@@ -209,6 +226,10 @@ class Fishpig_Wordpress_Helper_System extends Fishpig_Wordpress_Helper_Abstract
 	 */
 	protected function _validateHtaccess()
 	{
+		if (isset($_SERVER['SERVER_SOFTWARE']) && strpos(strtolower($_SERVER["SERVER_SOFTWARE"]), 'nginx') !== false) {
+			return $this;
+		}
+
 		if (($path = Mage::helper('wordpress')->getWordPressPath()) !== false) {
 			$file = rtrim($path, DS) . DS . '.htaccess';
 			
@@ -231,6 +252,29 @@ class Fishpig_Wordpress_Helper_System extends Fishpig_Wordpress_Helper_Abstract
 			}
 		}
 
+		return $this;
+	}
+	
+	/**
+	 * Ensure the L10n file is writable if using add-on extensions that use Core
+	 *
+	 * @return $this
+	 **/
+	protected function _validateL10nPermissions()
+	{
+		if (($path = Mage::helper('wordpress')->getWordPressPath()) !== false) {
+			$file = $path . 'wp-includes' . DS . 'l10n.php';
+
+			if (Mage::getConfig()->getNode('wordpress/core/modules')) {
+				if (is_file($file) && !is_writable($file)) {
+					throw Fishpig_Wordpress_Exception::error(
+						'Permissions',
+						'The following file must be writable: ' . $file
+					);
+				}
+			}
+		}
+		
 		return $this;
 	}
 	
@@ -349,7 +393,7 @@ class Fishpig_Wordpress_Helper_System extends Fishpig_Wordpress_Helper_Abstract
 			$ch = curl_init();
 
 			curl_setopt($ch, CURLOPT_URL, $url);
-			curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)');
+			curl_setopt($ch, CURLOPT_USERAGENT, self::CURL_USERAGENT);
 			curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 			curl_setopt($ch, CURLOPT_HEADER, true);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -379,7 +423,7 @@ class Fishpig_Wordpress_Helper_System extends Fishpig_Wordpress_Helper_Abstract
 		));
 		
 		$curl->addOption(CURLOPT_FOLLOWLOCATION, true);
-		$curl->addOption(CURLOPT_USERAGENT, 'Mozilla/4.2 (compatible; MSIE 5.01; Windows NT 5.0)');
+		$curl->addOption(CURLOPT_USERAGENT, self::CURL_USERAGENT);
 		$curl->addOption(CURLOPT_REFERER, true);
 
 		$curl->write(Zend_Http_Client::GET, $url, '1.1');
@@ -416,7 +460,7 @@ class Fishpig_Wordpress_Helper_System extends Fishpig_Wordpress_Helper_Abstract
 			curl_setopt($ch, CURLOPT_URL, $url);
 			curl_setopt($ch, CURLOPT_POST, count($data));
 			curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-			curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)');
+			curl_setopt($ch, CURLOPT_USERAGENT, self::CURL_USERAGENT);
 			curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 			curl_setopt($ch, CURLOPT_HEADER, true);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -446,7 +490,7 @@ class Fishpig_Wordpress_Helper_System extends Fishpig_Wordpress_Helper_Abstract
 		));
 		
 		$curl->addOption(CURLOPT_FOLLOWLOCATION, false);
-		$curl->addOption(CURLOPT_USERAGENT, 'Mozilla/4.2 (compatible; MSIE 5.01; Windows NT 5.0)');
+		$curl->addOption(CURLOPT_USERAGENT, self::CURL_USERAGENT);
 		$curl->addOption(CURLOPT_REFERER, true);
 
 		$curl->write(Zend_Http_Client::POST, $url, '1.1', array('Expect:'), $data);

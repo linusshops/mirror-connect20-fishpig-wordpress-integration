@@ -29,6 +29,8 @@ class Fishpig_Wordpress_Model_Resource_Menu_Item_Collection extends Fishpig_Word
 	public function _construct()
 	{
 		$this->_init('wordpress/menu_item');
+		
+		$this->addPostTypeFilter('nav_menu_item');
 	}
 	
 	/**

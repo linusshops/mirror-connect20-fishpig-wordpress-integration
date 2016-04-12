@@ -42,7 +42,7 @@ class Fishpig_Wordpress_Model_Term_Taxonomy extends Varien_Object
 		$select = $db->select()
 			->from(array('term' => $helper->getTableName('wordpress/term')), array(
 				'id' => 'term_id', 
-				'url_key' => new Zend_Db_Expr("TRIM(LEADING '/' FROM CONCAT('" . rtrim($this->getSlug(), '/') . "/', slug))"),
+				'url_key' => 'slug',new Zend_Db_Expr("TRIM(LEADING '/' FROM CONCAT('" . rtrim($this->getSlug(), '/') . "/', slug))"),
 				))
 			->join(
 				array('tax' => $helper->getTableName('wordpress/term_taxonomy')),
@@ -57,7 +57,7 @@ class Fishpig_Wordpress_Model_Term_Taxonomy extends Varien_Object
 				}
 			}
 
-			$this->setAllUris(Mage::helper('wordpress/router')->generateRoutesFromArray($results));
+			$this->setAllUris(Mage::helper('wordpress/router')->generateRoutesFromArray($results, $this->getSlug()));
 		}
 
 		return $this->_getData('all_uris');
@@ -69,12 +69,18 @@ class Fishpig_Wordpress_Model_Term_Taxonomy extends Varien_Object
 	 * @param Fishpig_Wordpress_Model_Term $term
 	 * @return false|string
 	 */
-	public function getUriById($id)
+	public function getUriById($id, $includePrefix = true)
 	{
 		if (($uris = $this->getAllUris()) !== false) {
-			return isset($uris[$id])
-				? $uris[$id]
-				: false;
+			if (isset($uris[$id])) {
+				$uri = $uris[$id];
+
+				if (!$includePrefix && $this->getSlug() && strpos($uri, $this->getSlug() . '/') === 0) {
+					$uri = substr($uri, strlen($this->getSlug())+1);
+				}
+				
+				return $uri;
+			}
 		}
 
 		return false;
@@ -97,21 +103,18 @@ class Fishpig_Wordpress_Model_Term_Taxonomy extends Varien_Object
 	 */
 	public function getSlug()
 	{
-		$helper = Mage::helper('wordpress');
-		
-		if ($this->getTaxonomyType() === 'category') {
-			if ($helper->isAddonInstalled('WordPressSEO')) {
-				if (Mage::helper('wp_addon_wordpressseo')->canRemoveCategoryBase()) {
-					return '';
-				}
-			}
+		return trim($this->getData('rewrite/slug'), '/');
+	}
+	
+	public function setSlug($slug)
+	{
+		if (!isset($this->_data['rewrite'])) {
+			$this->_data['rewrite'] = array();
 		}
 		
-		if ($helper->isPluginEnabled('No Category Base WPML') || $helper->isPluginEnabled('No Category Base')) {
-			return '';
-		}
+		$this->_data['rewrite']['slug'] = $slug;
 		
-		return $this->getData('rewrite/slug');
+		return $this;
 	}
 	
 	/**

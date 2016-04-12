@@ -28,8 +28,8 @@ class Fishpig_Wordpress_AuthorController extends Fishpig_Wordpress_Controller_Ab
 		$author = $this->_initAuthor();
 		
 		$this->_addCustomLayoutHandles(array(
-			'wordpress_author_view', 
 			'wordpress_post_list',
+			'wordpress_author_view', 
 			'wordpress_author_view_' . $author->getId(),
 		));
 			
@@ -57,8 +57,6 @@ class Fishpig_Wordpress_AuthorController extends Fishpig_Wordpress_Controller_Ab
 		));
 			
 		$this->_initLayout();
-		
-		$this->_rootTemplates[] = 'author_bio';
 	
 		$this->_title($author->getDisplayName());
 		$this->addCrumb('author_nolink', array('label' => $this->__('Author')));

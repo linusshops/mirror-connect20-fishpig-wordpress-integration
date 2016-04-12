@@ -13,9 +13,5 @@
 			<active>true</active>
 			<codePool>community</codePool>
 		</Fishpig_Wordpress_Addon_Yarpp>
-		<Fishpig_Wordpress_FPAdmin>
-			<active>true</active>
-			<codePool>community</codePool>
-		</Fishpig_Wordpress_FPAdmin>
     </modules>
 </config>

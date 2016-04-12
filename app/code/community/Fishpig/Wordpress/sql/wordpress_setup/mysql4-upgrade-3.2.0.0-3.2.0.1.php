@@ -12,6 +12,9 @@
 		// Delete old autologin table
 		$this->getConnection()->query("DROP TABLE IF EXISTS {$this->getTable('wordpress_autologin')}");
 		
+		// Delete old CPT table
+		$this->getConnection()->query("DROP TABLE IF EXISTS {$this->getTable('wordpress_addon_cpt_type')}");
+		
 		// Check for association tables
 		Mage::helper('wordpress/associations')->checkForTables();
 		

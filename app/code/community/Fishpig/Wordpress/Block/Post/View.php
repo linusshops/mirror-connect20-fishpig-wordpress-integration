@@ -28,10 +28,26 @@ class Fishpig_Wordpress_Block_Post_View extends Fishpig_Wordpress_Block_Post_Abs
 			$this->getChild('comments')->setPost($this->getPost());
 		}
 		
-		if ($this->getPost()->getPostViewTemplate()) {
-			$this->setTemplate($this->getPost()->getPostViewTemplate());
-		}
+		$this->_initPostViewTemplate();
 
 		return parent::_beforeToHtml();
+	}
+	
+	/**
+	 * Get the post renderer template
+	 *
+	 * @param Fishpig_Wordpress_Model_Post $post
+	 * @return string
+	 */
+	protected function _initPostViewTemplate()
+	{
+		if ($viewTemplate = $this->getPost()->getTypeInstance()->getViewTemplate()) {
+			return $this->setTemplate($viewTemplate);
+		}
+		else if ($this->getPost()->getPostViewTemplate()) {
+			return $this->setTemplate($this->getPost()->getPostViewTemplate());
+		}
+
+		return $this;
 	}
 }

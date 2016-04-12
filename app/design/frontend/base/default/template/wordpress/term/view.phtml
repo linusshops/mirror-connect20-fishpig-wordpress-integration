@@ -11,6 +11,9 @@
 	<div class="page-title">
 		<h1><?php echo $this->escapeHtml($_term->getName()) ?>	</h1>
 	</div>
+	<?php if ($description = $_term->getDescription()): ?>
+		<div class="description"><?php echo $description ?></div>
+	<?php endif; ?>
 	<?php if ($postList = trim($this->getPostListHtml())): ?>
 		<?php echo $postList ?>
 	<?php else: ?>

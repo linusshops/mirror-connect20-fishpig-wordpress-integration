@@ -188,31 +188,6 @@ class Fishpig_Wordpress_Addon_WordPressSEO_Helper_Data extends Fishpig_Wordpress
 	{
 		$this->_applyPostPageLogic($post);
 		
-		/*
-		if ($post->getPostType() !== 'post' && Mage::helper('wordpress')->isAddonInstalled('CPT')) {
-			$postType = $post->getTypeInstance();
-			
-			if ($postType !== false) {
-				$crumbs = $this->getAction()->getCrumbs();
-				
-				$keysToKeep = array('home');
-				
-				if (!(Mage::helper('wordpress')->isAddonInstalled('Root') && Mage::getStoreConfig('wordpress/integration/at_root'))) {
-					$keysToKeep[] = 'blog';
-				}
-
-				foreach($crumbs as $key => $crumb) {
-					if (!in_array($key, $keysToKeep)) {
-						$this->getAction()->removeCrumb($key);
-					}
-				}
-
-				$this->getAction()->addCrumb('post_type', array('label' => $postType->getName(), 'link' => $postType->getUrl()));
-				$this->getAction()->addCrumb('post', array('label' => $post->getPostTitle()));
-			}
-		}
-		*/
-		
 		return $this;
 	}
 	
@@ -314,6 +289,7 @@ class Fishpig_Wordpress_Addon_WordPressSEO_Helper_Data extends Fishpig_Wordpress
 				'site' => ($this->getTwitterSite() ? '@' . $this->getTwitterSite() : ''),
 				'title' => $object->getPostTitle(),
 				'creator' => ($creator = $object->getAuthor()->getMetaValue('twitter')) ? '@' . $creator : '',
+				'image0' => $object->getFeaturedImage() ? $object->getFeaturedImage()->getFullSizeImage() : null,
 			));
 		}
 		
@@ -352,13 +328,13 @@ class Fishpig_Wordpress_Addon_WordPressSEO_Helper_Data extends Fishpig_Wordpress
 				));
 				
 				if ($meta->getWpseoCanonical()) {
-					$category->setCanonicalUrl($meta->getWpseoCanonical());
+					$term->setCanonicalUrl($meta->getWpseoCanonical());
 				}
 
 				$this->_applyOpenGraph(array(
 					'title' => $meta->getWpseoTitle(),
 					'description' => $meta->getWpseoDesc(),
-					'url' => $category->getCanonicalUrl(),
+					'url' => $term->getCanonicalUrl(),
 				));
 			}
 		}
@@ -702,6 +678,40 @@ class Fishpig_Wordpress_Addon_WordPressSEO_Helper_Data extends Fishpig_Wordpress
 	 */
 	public function canRemoveCategoryBase()
 	{
-		return (int)$this->getData('stripcategorybase') === 1;
+		return $this->isEnabled() && (int)$this->getData('stripcategorybase') === 1;
+	}
+
+	/**
+	 * Process the SEO values for the Tribe Events homepage
+	 *
+	 * @param $action
+	 * @param Varien_Object $post
+	 */	
+	public function processRouteWpAddonEventscalendarIndexIndex($object)
+	{
+		return $this;
+	}
+	
+	/**
+	 * Process the SEO values for the Tribe Events view page
+	 *
+	 * @param $action
+	 * @param Varien_Object $post
+	 */	
+	public function processRouteWpAddonEventscalendarEventView($post)
+	{
+		$this->_applyPostPageLogic($post, $post->getPostType());
+		
+		return $this;
+	}
+	
+	/**
+	 * Tribe Events category page
+	 *
+	 * @param Varien_Object $category
+	 */
+	public function processRouteWpAddonEventscalendarEventCategoryView($term)
+	{
+		return $this->processRouteWordpressTermView($term);
 	}
 }

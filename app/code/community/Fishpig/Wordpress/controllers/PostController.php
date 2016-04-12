@@ -5,7 +5,6 @@
  * @license     http://fishpig.co.uk/license.txt
  * @author      Ben Tideswell <help@fishpig.co.uk>
  */
-
 class Fishpig_Wordpress_PostController extends Fishpig_Wordpress_Controller_Abstract
 {
 	/**
@@ -31,8 +30,8 @@ class Fishpig_Wordpress_PostController extends Fishpig_Wordpress_Controller_Abst
 		$this->_handlePostedComment();
 		
 		$post = $this->getEntityObject();
-		
-		if ($post->isType('page') && (int)$post->getId() === (int)Mage::helper('wordpress/router')->getBlogPageId()) {
+
+		if ($post->isBlogListingPage()) {
 			return $this->_forward('index', 'index', 'wordpress');
 		}
 
@@ -50,16 +49,36 @@ class Fishpig_Wordpress_PostController extends Fishpig_Wordpress_Controller_Abst
 		$layoutHandles = array(
 			'wordpress_post_view',
 			'wordpress_' . $post->getPostType() . '_view',
-			'wordpress_' . $post->getPostType() . '_view_' . $post->getId(),
 		);
+		
+		$isHomepage = (bool)$this->getRequest()->getParam('is_homepage');
+		
+		if ($post->isHomepagePage() && !$isHomepage) {
+			if (Mage::getUrl('', array('_current' => true, '_use_rewrite' => true)) !== Mage::helper('wordpress')->getUrl()) {
+				return $this->_redirectUrl(Mage::helper('wordpress')->getUrl());
+			}
+		}
 		
 		if ($post->getTypeInstance()->isHierarchical()) {
 			$buffer = $post->getParentPost();
 	
 			while ($buffer) {
 				$layoutHandles[] = 'wordpress_' . $post->getPostType() . '_view_parent_' . $buffer->getId();
+				
+				// Legacy
+				if ($post->isType('page')) {
+					$layoutHandles[] = 'wordpress_' . $post->getPostType() . '_parent_' . $buffer->getId();
+				}
+
 				$buffer = $buffer->getParentPost();
 			}
+		}
+
+		// Add the layout handle for the post type and ID
+		$layoutHandles[] = 'wordpress_' . $post->getPostType() . '_view_' . $post->getId();
+		
+		if ($post->isHomepagePage() && $isHomepage) {
+			$layoutHandles[] = 'wordpress_frontpage';
 		}
 
 		$this->_addCustomLayoutHandles($layoutHandles);
@@ -81,7 +100,11 @@ class Fishpig_Wordpress_PostController extends Fishpig_Wordpress_Controller_Abst
 			}
 		}
 
-		if ($post->isType('page') && (int)$post->getId() === (int)Mage::helper('wordpress/router')->getHomepagePageId()) {
+		if ($post->getTypeInstance()->hasArchive()) {
+			$this->addCrumb($post->getPostType() . '_archive', array('label' => $post->getTypeInstance()->getName(), 'link' => $post->getTypeInstance()->getArchiveUrl()));
+		}
+		
+		if ($isHomepage) {
 			$post->setCanonicalUrl(Mage::helper('wordpress')->getUrl());
 
 			if (Mage::helper('wordpress')->getBlogRoute() === '') {
@@ -107,24 +130,33 @@ class Fishpig_Wordpress_PostController extends Fishpig_Wordpress_Controller_Abst
 			array_pop($posts);
 			
 			foreach($posts as $buffer) {
-				$this->addCrumb('page_' . $buffer->getId(), array('label' => $buffer->getPostTitle(), 'link' => $buffer->getUrl()));
+				$this->addCrumb('post_' . $buffer->getId(), array('label' => $buffer->getPostTitle(), 'link' => $buffer->getUrl()));
 			}
 		}
-		else if ($post->hasParentCategory()) {
-			$categories = array();
-			$category = $post->getParentCategory();
-
-			while($category) {
-				array_unshift($categories, $category);
-				$category = $category->getParentTerm();
-			}
-			
-			foreach($categories as $category) {
-				$this->addCrumb('post_category_' . $category->getId(), array('label' => $category->getName(), 'link' => $category->getUrl()));
+		else if ($taxonomy = $post->getTypeInstance()->getAnySupportedTaxonomy('category')) {
+			if ($term = $post->getParentTerm($taxonomy->getTaxonomyType())) {
+				$terms = array();
+	
+				while($term) {
+					array_unshift($terms, $term);
+					$term = $term->getParentTerm();
+				}
+				
+				foreach($terms as $term) {
+					$this->addCrumb('post_' . $term->getTaxonomyType() . '_' . $term->getId(), array('label' => $term->getName(), 'link' => $term->getUrl()));
+				}
 			}
 		}
 		
-		$this->addCrumb('post', array('label' => $post->getPostTitle()));
+		if (!$isHomepage) {
+			$this->addCrumb('post', array('label' => $post->getPostTitle()));
+		}
+		
+		if (strpos($post->getMetaValue('_wp_page_template'), 'full-width') !== false) {
+			if ($root = $this->getLayout()->getBlock('root')) {
+				$root->setTemplate('page/1column.phtml');
+			}
+		}
 
 		$this->renderLayout();
 	}
@@ -193,7 +225,7 @@ class Fishpig_Wordpress_PostController extends Fishpig_Wordpress_Controller_Abst
 			$post = Mage::getModel('wordpress/post')->load($postId);
 
 			if ($post->getId()) {
-				if ($isPreview || Mage::helper('wordpress/post')->useGuidLinks()) {
+				if ($isPreview || $post->getTypeInstance() && $post->getTypeInstance()->useGuidLinks()) {
 					Mage::register('wordpress_post', $post);
 
 					return $post;

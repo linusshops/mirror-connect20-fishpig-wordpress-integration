@@ -95,4 +95,14 @@ class Fishpig_Wordpress_Adminhtml_WordpressController extends Mage_Adminhtml_Con
 			Mage::helper('wordpress')->log($e);
 		}		
 	}
+
+	/**
+	 * Determine ACL permissions
+	 *
+	 * @return bool
+	 */
+	protected function _isAllowed()
+	{
+		return true;
+	}	
 }

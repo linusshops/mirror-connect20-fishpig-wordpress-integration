@@ -57,8 +57,8 @@ abstract class Fishpig_Wordpress_Helper_Plugin_Abstract extends Varien_Object
 				foreach($options as $key => $value) {
 					if ($this->_fixOptionKeys === true) {
 						$key = trim(str_replace($this->_optionsValuePrefix, '', $key), '-_ ');
-						$key = preg_replace('/([A-Z]{1})([A-Z]{1,})/e', "$1 . strtolower($2);", $key);
-						$key = preg_replace('/([A-Z]{1})/e', "'_' . strtolower($1);", $key);
+						$key = @preg_replace('/([A-Z]{1})([A-Z]{1,})/e', "$1 . strtolower($2);", $key);
+						$key = @preg_replace('/([A-Z]{1})/e', "'_' . strtolower($1);", $key);
 					}
 					
 					if (is_array($value) || trim($value) !== '') {

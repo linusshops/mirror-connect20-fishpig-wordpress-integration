@@ -13,7 +13,7 @@ class Fishpig_Wordpress_TermController extends Fishpig_Wordpress_Controller_Abst
 	 *
 	 * @var string
 	 */
-	 protected $_feedBlock = 'term_feed';
+	 protected $_feedBlock = 'term_view';
 	 
 	/**
 	 * Used to do things en-masse
@@ -50,12 +50,14 @@ class Fishpig_Wordpress_TermController extends Fishpig_Wordpress_Controller_Abst
 		$term = Mage::registry('wordpress_term');
 		
 		$this->_addCustomLayoutHandles(array(
-			'wordpress_term_view',
-			'wordpress_term_index',
-			'wordpress_term',
 			'wordpress_post_list',
+			'wordpress_term_view',
+			'wordpress_post_' . $term->getTaxonomyType() . '_view',  // Legacy
+			'wordpress_' . $term->getTaxonomyType() . '_view',
+			'wordpress_' . $term->getTaxonomyType() . '_' . $term->getId(), // Legacy
+			'wordpress_' . $term->getTaxonomyType() . '_view_' . $term->getId(),
 		));
-			
+
 		$this->_initLayout();
 		
 		$tree = array($term);

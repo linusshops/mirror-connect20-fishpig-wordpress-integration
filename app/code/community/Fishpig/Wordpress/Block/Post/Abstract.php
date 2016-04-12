@@ -19,6 +19,16 @@ abstract class Fishpig_Wordpress_Block_Post_Abstract extends Fishpig_Wordpress_B
 	}
 
 	/**
+	 * Legacy function so that old templates continue to work
+	 *
+	 * @return Fishpig_Wordpress_Model_Post
+	 */
+	public function getPage()
+	{
+		return $this->getPost();
+	}
+	
+	/**
 	 * Returns the ID of the currently loaded post
 	 *
 	 * @return int|false

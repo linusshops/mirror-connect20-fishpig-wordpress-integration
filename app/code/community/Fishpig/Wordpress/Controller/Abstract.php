@@ -45,6 +45,12 @@ abstract class Fishpig_Wordpress_Controller_Abstract extends Mage_Core_Controlle
 	 */
     public function preDispatch()
     {
+	    if (Mage::registry('wordpress_controller')) {
+		    Mage::unregister('wordpress_controller');
+	    }
+
+	    Mage::register('wordpress_controller', $this);
+	    
     	parent::preDispatch();
 
 		try {
@@ -53,7 +59,9 @@ abstract class Fishpig_Wordpress_Controller_Abstract extends Mage_Core_Controlle
 				return;
 			}
 
-			if ($this->getRequest()->getParam('feed')) {
+			if ($this->getRequest()->getParam('feed_type')) {
+				$this->getRequest()->setParam('feed', $this->getRequest()->getParam('feed_type')); // Legacy fix
+				
 				if (strpos(strtolower($this->getRequest()->getActionName()), 'feed') === false) {
 					$this->_forceForwardViaException('feed');
 					return;
@@ -70,6 +78,25 @@ abstract class Fishpig_Wordpress_Controller_Abstract extends Mage_Core_Controlle
 			return;
 		}
 
+		// Check for redirects and forwards
+		$transport = new Varien_Object();
+
+		Mage::dispatchEvent(
+			'wordpress_' . strtolower(substr(get_class($this), strlen('Fishpig_Wordpress_'), -strlen('Controller'))) . '_controller_pre_dispatch_after', 
+			array(
+				'transport' => $transport,
+				'action' => $this,
+			)
+		);
+		
+		if ($transport->getForward()) {
+			return $this->_forward(
+				$transport->getForward()->getAction(),
+				$transport->getForward()->getController(),
+				$transport->getForward()->getModule()
+			);
+		}
+		
 		return $this;
     }
 
@@ -107,6 +134,8 @@ abstract class Fishpig_Wordpress_Controller_Abstract extends Mage_Core_Controlle
 	 */
     public function renderLayout($output='')
     {
+		Mage::dispatchEvent('wordpress_render_layout_before', array('object' => $this->getEntityObject(), 'action' => $this));
+		
 		if (($headBlock = $this->getLayout()->getBlock('head')) !== false) {
 			if ($entity = $this->getEntityObject()) {
 				$headBlock->addItem('link_rel', ($entity->getCanonicalUrl() ? $entity->getCanonicalUrl() : $entity->getUrl()), 'rel="canonical"');
@@ -123,8 +152,6 @@ abstract class Fishpig_Wordpress_Controller_Abstract extends Mage_Core_Controlle
 			);
 		}
 
-		Mage::dispatchEvent('wordpress_render_layout_before', array('object' => $this->getEntityObject(), 'action' => $this));
-
 		if (($headBlock = $this->getLayout()->getBlock('head')) !== false) {
 			if (Mage::helper('wordpress')->getWpOption('blog_public') !== '1') {
 				$headBlock->setRobots('noindex,nofollow');
@@ -139,12 +166,13 @@ abstract class Fishpig_Wordpress_Controller_Abstract extends Mage_Core_Controlle
 					unset($crumb[0]['link']);
 				}
 				
-				$block->addCrumb($crumbName, $crumb[0], $crumb[1]);
+				if ($crumb[0]['title']) {
+					$block->addCrumb($crumbName, $crumb[0], $crumb[1]);
+				}
 			}
 		}
 		
 		$this->_renderTitles();
-
 
 		Mage::helper('wordpress/social')->addCodeToHead();
 		
@@ -180,8 +208,8 @@ abstract class Fishpig_Wordpress_Controller_Abstract extends Mage_Core_Controlle
 			$rootBlock->addBodyClass('is-blog');
 		}
 		
-		Mage::dispatchEvent('wordpress_init_layout_after', array('object' => $this->getEntityObject()));
-		Mage::dispatchEvent($this->getFullActionName() . '_init_layout_after', array('object' => $this->getEntityObject()));
+		Mage::dispatchEvent('wordpress_init_layout_after', array('object' => $this->getEntityObject(), 'controller' => $this));
+		Mage::dispatchEvent($this->getFullActionName() . '_init_layout_after', array('object' => $this->getEntityObject(), 'controller' => $this));
 
 		return $this;
 	}
@@ -258,6 +286,7 @@ abstract class Fishpig_Wordpress_Controller_Abstract extends Mage_Core_Controlle
 			$allHandles[] = $handle;
 			$allHandles[] = $storeHandlePrefix . $handle;
 		}
+
 		array_unshift($allHandles, 'default');
 		
 		foreach($allHandles as $handle) {
@@ -273,7 +302,7 @@ abstract class Fishpig_Wordpress_Controller_Abstract extends Mage_Core_Controlle
 		$this->loadLayoutUpdates();		
 		$this->generateLayoutXml();
 		$this->generateLayoutBlocks();
-		
+
 		$this->_isLayoutLoaded = true;
 		
 		return $this;

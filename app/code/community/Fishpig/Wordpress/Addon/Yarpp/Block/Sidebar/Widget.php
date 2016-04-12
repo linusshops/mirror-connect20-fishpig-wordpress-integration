@@ -225,7 +225,7 @@ class Fishpig_Wordpress_Addon_Yarpp_Block_Sidebar_Widget extends Fishpig_Wordpre
 	public function getRelatedPostCollection(Fishpig_Wordpress_Model_Post $post)
 	{
 		return Mage::getResourceModel('wordpress/post_collection')
-			->addIsPublishedFilter()
+			->addIsViewableFilter()
 			->addFieldToFilter('ID', array('in' => $this->getRelatedPostIds($post)));
 	}
 	

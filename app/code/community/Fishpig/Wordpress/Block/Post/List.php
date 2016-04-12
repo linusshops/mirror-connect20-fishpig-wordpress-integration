@@ -72,6 +72,14 @@ class Fishpig_Wordpress_Block_Post_List extends Fishpig_Wordpress_Block_Post_Abs
 		if (!$this->hasPagerBlock()) {
 			$this->setPagerBlock(false);
 			
+			if (!$this->getChild('pager')) {
+				$this->setChild('pager', $this->getLayout()
+					->createBlock('wordpress/post_list_pager')
+						->setNameInLayout('wordpress_post_list')
+						->setAlias('pager')
+				);
+			}
+
 			if ($pager = $this->getChild('pager')) {
 				$this->setPagerBlock(
 					$pager->setPostListBlock($this)
@@ -111,24 +119,29 @@ class Fishpig_Wordpress_Block_Post_List extends Fishpig_Wordpress_Block_Post_Abs
 		return $this->_getData('post_renderer')
 			->setPost($post)
 			->setTemplate(
-				$post->getPostListTemplate() ? $post->getPostListTemplate() : $this->getPostRendererTemplate()
+				$this->getPostRendererTemplate($post)
 			);
 	}
-	
+
 	/**
 	 * Get the post renderer template
 	 *
+	 * @param Fishpig_Wordpress_Model_Post $post
 	 * @return string
 	 */
-	public function getPostRendererTemplate()
+	public function getPostRendererTemplate(Fishpig_Wordpress_Model_Post $post)
 	{
-		if (!$this->hasPostRendererTemplate()) {
-			$this->setPostRendererTemplate('wordpress/post/list/renderer/default.phtml');
+		if ($archiveTemplate = $post->getTypeInstance()->getArchiveTemplate()) {
+			return $archiveTemplate;
 		}
 		
-		return $this->_getData('post_renderer_template');
+		if ($this->hasPostRendererTemplate()) {
+			return $this->_getData('post_renderer_template');
+		}
+		
+		return 'wordpress/post/list/renderer/default.phtml';
 	}
-
+	
 	/**
 	 * Ensure that the post list handle is set (adds the pager)
 	 *

@@ -39,8 +39,36 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 		}
 
 		$select->columns(array('permalink' => $this->getPermalinkSqlColumn()));
-		
+
 		return $select;
+	}
+	
+	public function completePostSlug($slug, $postId, $postType)
+	{
+		if (!preg_match_all('/(\%[a-z0-9_-]{1,}\%)/U', $slug, $matches)) {
+			return $slug;
+		}
+
+		$matchedTokens = $matches[0];
+
+		foreach($matchedTokens as $mtoken) {
+			if ($mtoken === '%postnames%') {
+				$slug = str_replace($mtoken, $postType->getHierarchicalPostName($postId), $slug);
+			}
+			else if ($taxonomy = Mage::helper('wordpress/app')->getTaxonomy(trim($mtoken, '%'))) {
+				$termData = $this->getParentTermsByPostId(array($postId), $taxonomy->getTaxonomyType(), false);
+
+				foreach($termData as $key => $term) {
+					if ((int)$term['object_id'] === (int)$postId) {
+						$slug = str_replace($mtoken, $taxonomy->getUriById($term['term_id'], false), $slug);
+						
+						break;
+					}
+				}
+			}
+		}
+
+		return urldecode($slug);
 	}
 	
 	/**
@@ -51,53 +79,13 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 	 */
 	public function preparePosts($posts)
 	{
-		$postIds = array();
-		
-		$hasCategoryTagInPermalink = false;
-
 		foreach($posts as $post) {
-			if ($post->getId()) {
-				$postIds[] = $post->getId();
-				
-				if (!$hasCategoryTagInPermalink && $post->getTypeInstance()) {
-					$hasCategoryTagInPermalink = strpos($post->getTypeInstance()->getPermalinkStructure(), '%category%') !== false;
-				}
-			}
+			$post->setData(
+				'permalink',
+				$this->completePostSlug($post->getData('permalink'), $post->getId(), $post->getTypeInstance())
+			);
 		}
-
-		if ($hasCategoryTagInPermalink && $results = $this->getParentCategoryIdsByPostIds($postIds)) {
-			$categoryCache = array();
-			
-			foreach($posts as $post) {
-				if (strpos($post->getTypeInstance()->getPermalinkStructure(), '%category%') === false) {
-					continue;
-				}
-				
-				foreach($results as $it => $result) {
-					if ($post->getId() === $result['object_id']) {
-						$categoryIds = explode(',', $result['category_ids']);
-						 
-						 $post->setCategoryIds($categoryIds);
-
-						$category = Mage::getModel('wordpress/term')
-							->setTaxonomy('category')
-							->load($categoryIds[0]);
-						
-						if ($category->getId()) {
-							$post->setParentCategory($category);
-						}
-
-						if ($post->getParentCategory()) {
-							$post->setPermalink(str_replace('%category%', trim($post->getParentCategory()->getUri(), '/'), $post->getData('permalink')));
-						}
-
-						unset($results[$it]);
-						break;
-					}
-				}
-			}
-		}
-
+		
 		return $this;
 	}
 	
@@ -108,30 +96,33 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 	 * @param bool $getAllIds = true
 	 * @return array|false
 	 */
-	public function getParentCategoryIdsByPostIds($postIds, $getAllIds = true)
+	public function getParentTermsByPostId($postId, $taxonomy = 'category')
 	{
 		$select = $this->_getReadAdapter()->select()
 			->distinct()
 			->from(array('_relationship' => $this->getTable('wordpress/term_relationship')), 'object_id')
-			->where('object_id IN (?)', $postIds)
+			->where('object_id = (?)', $postId)
 			->join(
 				array('_taxonomy' => $this->getTable('wordpress/term_taxonomy')),
-				"`_taxonomy`.`term_taxonomy_id` = `_relationship`.`term_taxonomy_id` AND `_taxonomy`.`taxonomy`= 'category'",
-				'*')
+				$this->_getReadAdapter()->quoteInto("_taxonomy.term_taxonomy_id = _relationship.term_taxonomy_id AND _taxonomy.taxonomy= ?", $taxonomy),
+				'*'
+			)
 			->join(
 				array('_term' => $this->getTable('wordpress/term')),
 				"`_term`.`term_id` = `_taxonomy`.`term_id`",
 				'name')
 			->order('_term.name ASC');
 
-		if (!$getAllIds) {
 			$select->reset('columns')
-				->columns(array('category_id' => '_term.term_id', 'object_id'))
+				->columns(array(
+					$taxonomy . '_id' => '_term.term_id', 
+					'term_id' => '_term.term_id',
+					'object_id'
+				))
 				->limit(1);
+
+		return $this->_getReadAdapter()->fetchAll($select);
 				
-			return $this->_getReadAdapter()->fetchAll($select);
-		}
-		
 		$wrapper = $this->_getReadAdapter()
 			->select()
 				->from(array('squery' => new Zend_Db_Expr('(' . (string)$select . ')')))
@@ -155,14 +146,14 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 		if (!($postTypes = Mage::helper('wordpress/app')->getPostTypes())) {
 			return false;
 		}
-		
+
 		$sqlColumns = array();
 		$fields = $this->getPermalinkSqlFields();
 
-		foreach($postTypes as $postType) {
+		foreach($postTypes as $postType) {	
 			$tokens = $postType->getExplodedPermalinkStructure();				
 			$sqlFields = array();
-	
+
 			foreach($tokens as $token) {
 				if (substr($token, 0, 1) === '%' && isset($fields[trim($token, '%')])) {
 					$sqlFields[] = $fields[trim($token, '%')];
@@ -176,6 +167,7 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 				$sqlColumns[$postType->getPostType()] = 'WHEN `post_type` = \'' . $postType->getPostType() . '\' THEN (CONCAT(' . implode(', ', $sqlFields) . '))';
 			}
 		}
+
 		return count($sqlColumns) > 0 
 			? sprintf('CASE %s END', implode('', $sqlColumns))
 			: false;
@@ -196,35 +188,39 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 
 		if ($postTypes = Mage::helper('wordpress/app')->getPostTypes()) {
 			$fields = $this->getPermalinkSqlFields();
-			
-			foreach($postTypes as $postType) {
-				if ($postType->isHierarchical()) {
-					$hierarchicalRoutes = $postType->getAllRoutes();
 
-					if ($hierarchicalRoutes) {
-						foreach($hierarchicalRoutes as $routeId => $route) {
-							if ($route === $originalUri) {
-								$permalinks += array($routeId => $route);
+			foreach($postTypes as $postType) {
+				if (false && $postType->isHierarchical()) {
+					$tokens = $postType->getExplodedPermalinkStructure();
+					
+					if (count($tokens) === 2 && $tokens[0] === '%postname%' && strpos($tokens[1], '%') === false) {
+						$hierarchicalRoutes = $postType->getHierarchicalPostNames();
+	
+						if ($hierarchicalRoutes) {
+							foreach($hierarchicalRoutes as $routeId => $route) {
+								if ($route === $originalUri) {
+									$permalinks += array($routeId => $route);
+								}
 							}
 						}
+
+						continue;
 					}
-
-					continue;
 				}
-
+				
 				if (!($tokens = $postType->getExplodedPermalinkStructure())) {
 					continue;
 				}
-				
+
 				$uri = $originalUri;
-				
+
 				if ($postType->permalinkHasTrainingSlash()) {
 					$uri = rtrim($uri, '/') . '/';
 				}
 
 				$filters = array();
 				$lastToken = $tokens[count($tokens)-1];
-				
+
 				# Allow for trailing static strings (eg. .html)
 				if (substr($lastToken, 0, 1) !== '%') {
 					if (substr($uri, -strlen($lastToken)) !== $lastToken) {
@@ -235,17 +231,30 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 					
 					array_pop($tokens);
 				}
-				
+
+
 				try {
 					for($i = 0; $i <= 1; $i++) {
 						if ($i === 1) {
 							$uri = implode('/', array_reverse(explode('/', $uri)));
 							$tokens = array_reverse($tokens);
 						}
-						
+
 						foreach($tokens as $key => $token) {
 							if (substr($token, 0, 1) === '%') {
 								if (!isset($fields[trim($token, '%')])) {
+									if ($taxonomy = Mage::helper('wordpress/app')->getTaxonomy(trim($token, '%'))) {
+										$endsWithPostname = isset($tokens[$key+1]) && $tokens[$key+1] === '/' 
+											&& isset($tokens[$key+2]) && $tokens[$key+2] === '%postname%' 
+											&& !isset($tokens[$key+3]);
+										
+										
+										if ($endsWithPostname) {
+											$uri = rtrim(substr($uri, strrpos(rtrim($uri, '/'), '/')), '/');
+											continue;
+										}
+									}
+
 									break;
 								}
 								
@@ -271,12 +280,23 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 							unset($tokens[$key]);
 						}
 					}
-			
+
 					if ($buffer = $this->getPermalinks($filters, $postType)) {
-						$permalinks += $buffer;
+						foreach($buffer as $routeId => $route) {
+							if (rtrim($route, '/') === $originalUri) {
+								$permalinks[$routeId] = $route;
+								throw new Exception('Break');
+							}	
+						}
+						
+#						$permalinks += $buffer;
 					}
 				}
 				catch (Exception $e) {
+					if ($e->getMessage() === 'Break') {
+						break;
+					}
+					
 					// Exception thrown to escape nested loops
 				}
 			}
@@ -310,22 +330,8 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 		}
 
 		if ($routes = $this->_getReadAdapter()->fetchPairs($select)) {
-			$categoryTaxonomy = Mage::helper('wordpress/app')->getTaxonomy('category');
-			
 			foreach($routes as $id => $permalink) {
-				$routes[$id] = urldecode($permalink);
-			
-				if (in_array('%category%', $tokens)) {
-					$categoryIds = $this->getParentCategoryIdsByPostIds(array_keys($routes), false);
-					
-					foreach($categoryIds as $key => $category) {
-						if ($category['object_id'] == $id) {
-							$routes[$id] = str_replace('%category%', $categoryTaxonomy->getUriById($category['category_id']), $permalink);
-							unset($categoryIds[$key]);
-							break;
-						}
-					}
-				}
+				$routes[$id] = urldecode($this->completePostSlug($permalink, $id, $postType));
 			}
 
 			return $routes;
@@ -333,7 +339,7 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 		
 		return false;
 	}
-	
+
 	/**
 	 * Get the SQL data for the permalink
 	 *
@@ -355,9 +361,9 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 	}
 	
 	/**
-	 * Determine whether the given page has any children pages
+	 * Determine whether the given post has any children posts
 	 *
-	 * @param Fishpig_Wordpress_Model_Page $page
+	 * @param Fishpig_Wordpress_Model_Post $post
 	 * @return bool
 	 */
 	public function hasChildrenPosts(Fishpig_Wordpress_Model_Post $post)

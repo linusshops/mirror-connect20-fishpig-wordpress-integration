@@ -35,9 +35,8 @@ class Fishpig_Wordpress_ArchiveController extends Fishpig_Wordpress_Controller_A
 		$archive = Mage::registry('wordpress_archive');
 		
 		$this->_addCustomLayoutHandles(array(
-			'wordpress_archive_view',
 			'wordpress_post_list',
-			'wordpress_term',
+			'wordpress_archive_view',
 		));
 			
 		$this->_initLayout();

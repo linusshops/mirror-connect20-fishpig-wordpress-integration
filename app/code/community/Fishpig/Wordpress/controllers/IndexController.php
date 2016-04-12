@@ -39,9 +39,25 @@ class Fishpig_Wordpress_IndexController extends Fishpig_Wordpress_Controller_Abs
 	 */
 	public function indexAction()
 	{
+		/**
+		 * If configured to display page as homepage,
+		 * forward to post controller and set request variables
+		 **/
+		if (($post = Mage::registry('wordpress_post')) === null) {
+			if (($postId = Mage::helper('wordpress/router')->getHomepagePageId()) !== false) {
+				$this->getRequest()
+					->setParam('id', $postId)
+					->setParam('post_type', 'page')
+					->setParam('is_homepage', 1);
+	
+				return $this->_forward('view', 'post');
+			}
+		}
+		
 		$this->_addCustomLayoutHandles(array(
-			'wordpress_homepage',
 			'wordpress_post_list',
+			'wordpress_homepage',
+			'wordpress_frontpage',
 		));
 
 		$this->_initLayout();

@@ -38,29 +38,10 @@ class Fishpig_Wordpress_Block_Post_View_Comments extends Fishpig_Wordpress_Block
 	public function getChildrenCommentsHtml(Fishpig_Wordpress_Model_Post_Comment $comment)
 	{
 		return $this->getLayout()
-			->createBlock($this->getType())
+			->createBlock('wordpress/post_view_comments')
 			->setTemplate($this->getTemplate())
 			->setParentId($comment->getId())
 			->setComments($comment->getChildrenComments())
 			->toHtml();
-	}
-
-	/**
-	 * Get the current block type
-	 *
-	 * @return string
-	 */
-	public function getType()
-	{
-		if (!$this->_getData('type')) {
-			if ($this->getPost() instanceof Fishpig_Wordpress_Model_Page) {
-				$this->setType('wordpress/page_view_comments');
-			}
-			else {
-				$this->setType('wordpress/post_view_comments');
-			}
-		}
-		
-		return $this->_getData('type');
 	}
 }

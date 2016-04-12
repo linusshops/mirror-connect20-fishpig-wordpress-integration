@@ -78,7 +78,7 @@ implements Mage_Widget_Block_Interface
 			}
 			
 			if ($authorId = $this->getAuthorId()) {
-				$collection->addAuthorIdFilter($authorId);
+				$collection->addFieldToFilter('post_author', $authorId);
 			}
 			
 			if ($tag = $this->getTag()) {
@@ -122,7 +122,7 @@ implements Mage_Widget_Block_Interface
 		if (!$this->hasCategory()) {
 			$this->setCategory(false);
 			if ($this->getCategoryId()) {
-				$category = Mage::getModel('wordpress/post_category')->load($this->getCategoryId());
+				$category = Mage::getModel('wordpress/term')->setTaxonomy('category')->load($this->getCategoryId());
 
 				if ($category->getId()) {
 					$this->setCategory($category)->setCategoryId($category->getId());

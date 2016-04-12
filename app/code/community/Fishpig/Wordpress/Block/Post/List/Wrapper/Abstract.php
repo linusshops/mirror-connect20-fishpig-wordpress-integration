@@ -16,8 +16,7 @@ abstract class Fishpig_Wordpress_Block_Post_List_Wrapper_Abstract extends Fishpi
 	public function getPostCollection()
 	{
 		if (!$this->hasPostCollection()  && ($collection = $this->_getPostCollection()) !== false) {
-			$collection->addIsViewableFilter()
-				->addOrder('post_date', 'desc');
+			$collection->addIsViewableFilter()->addOrder('post_date', 'desc');
 			
 			$this->setPostCollection($collection);
 			

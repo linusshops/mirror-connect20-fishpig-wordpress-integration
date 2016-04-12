@@ -16,13 +16,6 @@
 					<sort_order>100</sort_order>
 					<action>adminhtml/system_config/edit/section/wordpress</action>
 				</configuration>
-				<!--
-				<support>
-					<title>Support</title>
-					<sort_order>200</sort_order>
-					<action>adminhtml/system_config/edit/section/wordpress/support/1</action>
-				</support>
-				-->
 			</children>
 		</wordpress>
 	</menu>

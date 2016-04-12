@@ -8,6 +8,11 @@
  
 class Fishpig_Wordpress_Model_Post_Type extends Mage_Core_Model_Abstract
 {
+	/**
+	 * Cache of URI's for hierarchical post types
+	 *
+	 * @var array static
+	 */
 	static $_uriCache = array();
 	
 	/**
@@ -38,11 +43,26 @@ class Fishpig_Wordpress_Model_Post_Type extends Mage_Core_Model_Abstract
 	public function getPermalinkStructure()
 	{
 		$structure = ltrim(str_replace('index.php/', '', ltrim($this->getData('rewrite/slug'), ' -/')), '/');
-		
+
 		if (!$this->isDefault() && strpos($structure, '%postname%') === false) {
 			$structure = rtrim($structure, '/') . '/%postname%/';
 		}
 		
+		if ($this->isHierarchical()) {
+			$structure = str_replace('%postname%', '%postnames%', $structure);
+		}
+		
+
+		if ((int)$this->getData('rewrite/with_front') === 1) {
+			$postPermalink = Mage::helper('wordpress/app')->getPostType('post')->getPermalinkStructure();
+			
+			if (substr($postPermalink, 0, 1) !== '%') {
+				$front = trim(substr($postPermalink, 0, strpos($postPermalink, '%')), '/');
+				
+				$structure = $front . '/' . $structure;
+			}
+		}
+
 		return $structure;
 	}
 	
@@ -80,7 +100,7 @@ class Fishpig_Wordpress_Model_Post_Type extends Mage_Core_Model_Abstract
 	 */
 	public function permalinkHasTrainingSlash()
 	{
-		return !$this->isDefault() || substr($this->getData('rewrite/slug'), -1) == '/';
+		return substr($this->getData('rewrite/slug'), -1) === '/' || substr($this->getPermalinkStructure(), -1) === '/';
 	}
 
 	/**
@@ -118,27 +138,46 @@ class Fishpig_Wordpress_Model_Post_Type extends Mage_Core_Model_Abstract
 	 *
 	 * @return string
 	 */
+	/**
+	 * Get the archive slug for the post type
+	 *
+	 * @return string
+	 */
 	public function getArchiveSlug()
 	{
-		if ((int)$this->getHasArchive() !== 1) {
+		if (!$this->hasArchive()) {
 			return false;
 		}
 		
-		if ($this->hasArchiveSlug()) {
-			return $this->_getData('archive_slug');
+		if (((string)$slug = $this->getHasArchive()) !== '1') {
+			return $slug;
 		}
 		
-		$slug = $this->getSlug();
-
-		$this->setArchiveSlug(
-			strpos($slug, '%') !== false
-			? trim(substr($slug, 0, strpos($slug, '%')), '/')
-			: trim($slug, '/')
-		);
-
-		return $this->_getData('archive_slug');
+		if ($slug = $this->getSlug()) {
+			if (strpos($slug, '%') !== false) {
+				$slug = trim(substr($slug, 0, strpos($slug, '%')), '%/');
+			}
+			
+			if ($slug) {
+				return $slug;
+			}
+		}
+		
+		return $this->getPostType();
 	}
 	
+	/**
+	 * Get the URL of the archive page
+	 *
+	 * @return string
+	 */
+	public function getArchiveUrl()
+	{
+		return $this->hasArchive()
+			? Mage::helper('wordpress')->getUrl($this->getArchiveSlug() . '/')
+			: '';
+	}
+
 	/**
 	 * Determine whether $taxonomy is supported by the post type
 	 *
@@ -153,6 +192,31 @@ class Fishpig_Wordpress_Model_Post_Type extends Mage_Core_Model_Abstract
 	}
 	
 	/**
+	 * Get a taxonomy that is supported by the post type
+	 *
+	 * @return string
+	 */
+	public function getAnySupportedTaxonomy($prioritise = array())
+	{
+		if (!is_array($prioritise)) {
+			$prioritise = array($prioritise);
+		}
+		
+		foreach($prioritise as $type) {
+			if ($this->isTaxonomySupported($type)) {
+				return Mage::helper('wordpress/app')->getTaxonomy($type);
+			}
+		}
+		
+		if ($taxonomies = $this->getTaxonomies()) {
+			return Mage::helper('wordpress/app')->getTaxonomy(array_shift($taxonomies));
+		}
+		
+		return false;
+	}
+	
+	
+	/**
 	 * Get the name of the post type
 	 *
 	 * @return string
@@ -162,12 +226,48 @@ class Fishpig_Wordpress_Model_Post_Type extends Mage_Core_Model_Abstract
 		return $this->getData('labels/name');
 	}
 	
+	/**
+	 * Determine whether this post type is hierarchical
+	 *
+	 * @return bool
+	 */
 	public function isHierarchical()
 	{
 		return (int)$this->getData('hierarchical') === 1;
 	}
 	
+	/**
+	 * Get the hierarchical post name for a post
+	 * This is the same as %postname% but with all of the parent post names included
+	 *
+	 * @param int $id
+	 * @return string|false
+	 */
+	public function getHierarchicalPostName($id)
+	{
+		if ($routes = $this->getHierarchicalPostNames()) {
+			return isset($routes[$id]) ? $routes[$id] : false;
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Get all routes (hierarchical)
+	 *
+	 * @return false|array
+	 */
 	public function getAllRoutes()
+	{
+		return $this->getHierarchicalPostNames();
+	}
+	
+	/**
+	 * Get an array of hierarchical post names
+	 *
+	 * @return false|array
+	 */
+	public function getHierarchicalPostNames()
 	{
 		if (!$this->isHierarchical()) {
 			return false;
@@ -195,5 +295,41 @@ class Fishpig_Wordpress_Model_Post_Type extends Mage_Core_Model_Abstract
 		);
 		
 		return self::$_uriCache[$this->getPostType()];
+	}
+	
+	/**
+	 * Determine whether this post type has an archive
+	 *
+	 * @return bool
+	 */
+	public function hasArchive()
+	{
+		return $this->getHasArchive() && $this->getHasArchive() !== '0';
+	}
+	
+	/**
+	 * Get the archive list template for the post type
+	 *
+	 * @return string
+	 */
+	public function getArchiveTemplate()
+	{
+		$customTemplateFile = 'wordpress/post/list/renderer/' . $this->getPostType() . '.phtml';
+		$customTemplate = Mage::getBaseDir('design') . DS . Mage::getDesign()->getTemplateFilename($customTemplateFile, array('_relative'=>true));
+
+		return is_file($customTemplate) ? $customTemplateFile : false;
+	}
+	
+	/**
+	 * Get the archive list template for the post type
+	 *
+	 * @return string
+	 */
+	public function getViewTemplate()
+	{
+		$customTemplateFile = 'wordpress/post/view/' . $this->getPostType() . '.phtml';
+		$customTemplate = Mage::getBaseDir('design') . DS . Mage::getDesign()->getTemplateFilename($customTemplateFile, array('_relative'=>true));
+
+		return is_file($customTemplate) ? $customTemplateFile : false;
 	}
 }

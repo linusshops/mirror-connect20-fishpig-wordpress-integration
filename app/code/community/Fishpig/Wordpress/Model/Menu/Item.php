@@ -90,10 +90,10 @@ class Fishpig_Wordpress_Model_Menu_Item extends Fishpig_Wordpress_Model_Post
 		if (!$this->isCustomLink()) {
 			if ($this->getObjectType()) {
 				if ($menuObjectId = $this->getMetaValue('_menu_item_object_id')) {
-					if ($this->isPostTypeLink() && $this->getObjectType() !== 'page')  {
+					if ($this->isPostTypeLink())  {
 						$object = Mage::getModel('wordpress/post')->setPostType($this->getObjectType());
 					}
-					else if ($this->isTaxonomyLink() && $this->getObjectType() !== 'post_category') {
+					else if ($this->isTaxonomyLink()) {
 						$object = Mage::getModel('wordpress/term')->setTaxonomy($this->getObjectType());
 					}
 					else {
@@ -128,13 +128,7 @@ class Fishpig_Wordpress_Model_Menu_Item extends Fishpig_Wordpress_Model_Post
 	public function getObjectType()
 	{
 		if (!$this->_getData('object_type')) {
-			$objectType = $this->getMetaValue('_menu_item_object');
-			
-			if ($objectType === 'category') {
-				$objectType = 'post_category';
-			}
-			
-			$this->setObjectType($objectType);
+			$this->setObjectType($this->getMetaValue('_menu_item_object'));
 		}
 		
 		return $this->_getData('object_type');

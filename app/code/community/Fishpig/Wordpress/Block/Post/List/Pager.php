@@ -42,12 +42,24 @@ class Fishpig_Wordpress_Block_Post_List_Pager extends Mage_Page_Block_Html_Pager
 		$slug = isset($params[$pageVarName]) 
 			? $pageVarName . '/' . $params[$pageVarName] . '/'
 			: '';
+		
+		$slug = ltrim($slug, '/');
 
-		return rtrim($this->getUrl('*/*/*', array(
+		$baseUrl = $this->getUrl('*/*/*', array(
 			'_current' => true,
 			'_escape' => true,
 			'_use_rewrite' => true,
+			'_nosid' => true,
 			'_query' => array('___refresh' => null),
-		)), '/') . '/' . $slug;
+		));
+		
+		$queryString = '';
+		
+		if (strpos($baseUrl, '?') !== false) {
+			$queryString = substr($baseUrl, strpos($baseUrl, '?'));
+			$baseUrl = substr($baseUrl, 0, strpos($baseUrl, '?'));
+		}
+		
+		return rtrim($baseUrl, '/') . '/' . $slug . $queryString;
 	}
 }

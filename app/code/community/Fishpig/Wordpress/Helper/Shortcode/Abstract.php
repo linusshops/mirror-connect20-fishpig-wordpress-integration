@@ -151,11 +151,22 @@ abstract class Fishpig_Wordpress_Helper_Shortcode_Abstract extends Fishpig_Wordp
 	protected function _convertRawUrls(&$content)
 	{
 		$content = "\n" . $content . "\n";
-		
+
 		if (($regex = $this->getRawUrlRegex()) !== '') {
-			if (preg_match_all('/[^a-zA-Z0-9"\']{1}' . $regex . '/i', $content, $result)) {		
-				foreach($result[1] as $key => $url) {
-					$content = str_replace($result[0][$key], sprintf('[%s%s%s]', $this->getTag(), $this->getConvertedUrlsMiddle(), $url), $content);
+			$regexes = array(
+				'[\r\n]{1}' . $regex . '[\r\n]{1}',
+				'<p>[\s]{0,}' . $regex . '[\s]{0,}<\/p>',
+			);
+			
+			foreach($regexes as $regex) {
+				if (preg_match_all('/' . $regex . '/i', $content, $result)) {
+					foreach($result[1] as $key => $url) {
+						$content = str_replace(
+							ltrim($result[0][$key], '>'), 
+							sprintf('[%s%s%s]', $this->getTag(), $this->getConvertedUrlsMiddle(), trim(strip_tags($url))), 
+							$content
+						);
+					}
 				}
 			}
 		}

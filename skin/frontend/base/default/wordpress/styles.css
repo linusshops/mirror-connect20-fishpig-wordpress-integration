@@ -302,3 +302,5 @@ img.max-width { max-width: 100%; }
 #fp-gallery .close {
 		display: inline-block; position: absolute; background: #fff url('lightbox-close.png') no-repeat center center; padding: 2px; border-radius: 50%; cursor: pointer; text-decoration: none; display: inline-block; height: 48px; width: 48px; margin: auto; top: 10px; right: 10px; text-indent: -999999px;
 }
+
+.aio-icon i { font-style: normal !important; }

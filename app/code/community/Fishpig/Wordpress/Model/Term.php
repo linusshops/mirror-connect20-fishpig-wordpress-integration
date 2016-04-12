@@ -21,6 +21,11 @@ class Fishpig_Wordpress_Model_Term extends Fishpig_Wordpress_Model_Abstract
 		$this->_init('wordpress/term');
 	}
 	
+	/**
+	 * Get the taxonomy object for this term
+	 *
+	 * @return Fishpig_Wordpress_Model_Term_Taxonomy
+	 */
 	public function getTaxonomyInstance()
 	{
 		return Mage::helper('wordpress/app')->getTaxonomy($this->getTaxonomy());
@@ -81,7 +86,7 @@ class Fishpig_Wordpress_Model_Term extends Fishpig_Wordpress_Model_Abstract
     {
 		return parent::getPostCollection()
 			->addIsViewableFilter()
-			->addTermIdFilter($this->getId(), $this->getTaxonomy());
+			->addTermIdFilter($this->getChildIds(), $this->getTaxonomy());
     }
       
 	/**
@@ -161,5 +166,57 @@ class Fishpig_Wordpress_Model_Term extends Fishpig_Wordpress_Model_Abstract
 	public function getChildrenCategories()
 	{
 		return $this->getChildrenTerms();
+	}
+	
+	/**
+	 * Get the number of posts belonging to the term
+	 *
+	 * @return int
+	 */
+	public function getPostCount()
+	{
+		return (int)$this->getCount();
+	}
+	
+	/**
+	 * Get an array of all child ID's
+	 * This includes the ID's of children's children
+	 *
+	 * @return array
+	 */
+	public function getChildIds()
+	{
+		if (!$this->hasChildIds()) {
+			$this->setChildIds(
+				$this->getResource()->getChildIds($this->getId())
+			);
+		}
+		
+		return $this->_getData('child_ids');
+	}
+	
+	/**
+	 * Get the meta value using ACF if it's installed
+	 *
+	 * @param string $key
+	 * @return mixed
+	 **/
+	public function getMetaValue($key)
+	{
+		$ikey = '__acf_meta_' . $key;
+		
+		if ($this->hasData($ikey)) {
+			return $this->_getData($ikey);
+		}
+		
+		if (!Mage::helper('wordpress')->isAddonInstalled('ACF')) {
+			$this->setData($ikey, null);
+			
+			return null;
+		}
+		
+		$this->setData($ikey, Mage::helper('wp_addon_acf')->getTermValue($key, $this));
+
+		return $this->_getData($ikey);
 	}
 }

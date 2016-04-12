@@ -26,17 +26,15 @@
     <wordpress>
     	<database>
     		<before_connect>
+				<tables>
+					<yarpp_related><table>yarpp_related_cache</table></yarpp_related>
+					<yarpp_keyword><table>yarpp_keyword_cache</table></yarpp_keyword>
+				</tables>
 				<tables_mu>
 					<yarpp_related><table>yarpp_related_cache</table></yarpp_related>
 					<yarpp_keyword><table>yarpp_keyword_cache</table></yarpp_keyword>
 				</tables_mu>
     		</before_connect>
-			<after_connect>
-				<tables>
-					<yarpp_related><table>yarpp_related_cache</table></yarpp_related>
-					<yarpp_keyword><table>yarpp_keyword_cache</table></yarpp_keyword>
-				</tables>
-			</after_connect>
 		</database>
 		<sidebar>
 			<widgets>

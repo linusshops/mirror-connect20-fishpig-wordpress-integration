@@ -22,6 +22,7 @@ implements Mage_Adminhtml_Block_Widget_Tab_Interface
 	public function __construct()
 	{
 		parent::__construct();
+
 		$this->setId($this->_getMagentoEntity() . $this->_getWpEntity());
 		$this->setDefaultSort($this->_getDefaultSort());
 		$this->setDefaultDir($this->_getDefaultDir());
@@ -107,10 +108,19 @@ implements Mage_Adminhtml_Block_Widget_Tab_Interface
 				'header'=> 'Name',
 				'index' => 'name',
 			));
-			
+
 			$this->addColumn('slug', array(
 				'header'=> 'Slug',
 				'index' => 'slug',
+			));
+			
+			$taxonomies = array_keys(Mage::helper('wordpress/app')->getTaxonomies());
+						
+			$this->addColumn('taxonomy', array(
+				'header'=> 'Type',
+				'index' => 'taxonomy',
+				'type' => 'options',
+				'options' => array_combine($taxonomies, $taxonomies),
 			));
     	}
     	
@@ -139,7 +149,9 @@ implements Mage_Adminhtml_Block_Widget_Tab_Interface
 					->addIsViewableFilter();
 			}
 			else if ($this->_getWpEntity() === 'category') {
-				$collection = Mage::getResourceModel('wordpress/post_category_collection');
+				$collection = Mage::getResourceModel('wordpress/term_collection')->addTaxonomyFilter(
+					array_keys(Mage::helper('wordpress/app')->getTaxonomies())
+				);
 			}
 			else {
 				return false;

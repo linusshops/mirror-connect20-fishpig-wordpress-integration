@@ -8,6 +8,20 @@
 
 class Fishpig_Wordpress_Model_Resource_Post_Comment_Collection extends Fishpig_Wordpress_Model_Resource_Collection_Abstract
 {
+	/**
+	 * Name prefix of events that are dispatched by model
+	 *
+	 * @var string
+	*/
+	protected $_eventPrefix = 'wordpress_post_comment_collection';
+	
+	/**
+	 * Name of event parameter
+	 *
+	 * @var string
+	*/
+	protected $_eventObject = 'post_comments';
+	
 	public function _construct()
 	{
 		$this->_init('wordpress/post_comment');

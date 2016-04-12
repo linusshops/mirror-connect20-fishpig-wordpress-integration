@@ -14,19 +14,6 @@ class Fishpig_Wordpress_Block_Post_Associated extends Fishpig_Wordpress_Block_Ab
 	 * @param null|Fishpig_Wordpress_Model_Resource_Post_Collection
 	 */
 	protected $_postCollection = null;
-
-	/**
-	 * Ensure the DB details are set
-	 *
-	 * @return $this
-	 */
-	protected function _prepareLayout()
-	{
-		// Force database connection to WP
-		$this->helper('wordpress/app')->getDbConnection();
-		
-		return parent::_prepareLayout();
-	}
 	
 	/**
 	 * Retrieve the association entity type

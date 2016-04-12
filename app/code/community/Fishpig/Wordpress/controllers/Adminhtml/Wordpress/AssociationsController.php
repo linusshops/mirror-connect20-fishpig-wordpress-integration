@@ -9,6 +9,16 @@
 class Fishpig_Wordpress_Adminhtml_Wordpress_AssociationsController extends Mage_Adminhtml_Controller_Action
 {
 	/**
+	 * Determine ACL permissions
+	 *
+	 * @return bool
+	 */
+	protected function _isAllowed()
+	{
+		return true;
+	}
+	
+	/**
 	 * Display the initial grid
 	 *
 	 */

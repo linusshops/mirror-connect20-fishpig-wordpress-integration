@@ -180,6 +180,18 @@ abstract class Fishpig_Wordpress_Model_Abstract extends Mage_Core_Model_Abstract
 	}
 	
 	/**
+	 * Get an array of all of the meta values associated with this post
+	 *
+	 * @return false|array
+	 */
+	public function getAllMetaValues()
+	{
+		return $this->hasMeta()
+			? $this->getResource()->getAllMetaValues($this)
+			: false;
+	}
+	
+	/**
 	 * Retrieve all of the meta data as an array
 	 *
 	 * @return false|array

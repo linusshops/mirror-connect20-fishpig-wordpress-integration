@@ -36,9 +36,21 @@
 				<block type="wordpress/adminhtml_extend" name="fishpig.extend" as="extend">
 					<action method="setModule"><module>Fishpig_Wordpress</module></action>
 					<action method="setMedium"><medium>System Configuration</medium></action>
-					<action method="setLimit"><limit>2</limit></action>
+					<action method="setLimit"><limit>6</limit></action>
 					<action method="setPreferred">
-						<pref><Fishpig_Wordpress_Addon_Root /><Fishpig_Wordpress_Addon_CS /><Fishpig_Wordpress_Addon_IntegratedSearch/><Fishpig_Wordpress_Addon_Facebook /></pref>
+						<pref>
+							<Fishpig_Wordpress_Addon_Multisite />
+							<Fishpig_Wordpress_Addon_Root />
+							<Fishpig_Wordpress_Addon_VisualComposer />
+							<Fishpig_Wordpress_Addon_GravityForms />
+							<Fishpig_Wordpress_Addon_Tablepress />
+							<Fishpig_Wordpress_Addon_CPT />
+							<Fishpig_Wordpress_Addon_ACF />
+							<Fishpig_Wordpress_Addon_CS />
+							<Fishpig_Wordpress_Addon_IntegratedSearch />
+							<Fishpig_Bolt />
+							<Fishpig_Opti />
+						</pref>
 					</action>
 				</block>
 			</block>
@@ -58,16 +70,6 @@
 										Validation.add('validate-blog-route','Please use only letters (a-z), numbers (0-9) or hyphen(-) in this field.', function(v){
 											return Validation.get('IsEmpty').test(v) ||  /^[a-z]+[a-z0-9-\/]+$/.test(v)
 										});
-										
-										var cptRow = $('row_wordpress_custom_post_types_types');
-										
-										if (cptRow) {
-											cptRow.select('td.value').invoke('writeAttribute', 'colspan', 4).invoke('setStyle', {'width': '100%'});
-											cptRow.select('td.label').invoke('remove');
-											cptRow.select('td.scope-label').invoke('remove');
-											cptRow.select('td').last().remove();
-											cptRow.select('p.note').invoke('setStyle', {'width': 'auto'});
-										}
 									}
 								})();
 							</script>

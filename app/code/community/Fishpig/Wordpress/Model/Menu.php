@@ -51,7 +51,6 @@ class Fishpig_Wordpress_Model_Menu extends Fishpig_Wordpress_Model_Term
     protected function _getObjectResourceModel()
     {
 	    return Mage::getResourceModel('wordpress/menu_item_collection')
-	    	->addPostTypeFilter('nav_menu_item')
 	    	->addParentItemIdFilter(0);
     }
     
@@ -82,7 +81,7 @@ class Fishpig_Wordpress_Model_Menu extends Fishpig_Wordpress_Model_Term
 		if (!$parentNode) {
 			return false;	
 		}
-		
+
 		foreach($items as $item) {
 			try {
 				$nodeId = 'wp-node-' . $item->getId();
@@ -103,7 +102,7 @@ class Fishpig_Wordpress_Model_Menu extends Fishpig_Wordpress_Model_Term
 						$buffer->setIsActive(true);
 					}
 				}
-				
+
 				$itemNode = new Varien_Data_Tree_Node($data, 'id', $parentNode->getTree(), $parentNode);
 				$parentNode->addChild($itemNode);
 	

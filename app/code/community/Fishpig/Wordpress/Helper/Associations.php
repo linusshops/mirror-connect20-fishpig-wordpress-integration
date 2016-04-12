@@ -8,6 +8,11 @@
 
 class Fishpig_Wordpress_Helper_Associations extends Fishpig_Wordpress_Helper_Abstract
 {
+	public function isConnected()
+	{
+		return Mage::helper('wordpress/app')->getDbConnection() !== false;
+	}
+	
 	/**
 	 * Retrieve a collection of post's associated with the given product
 	 *
@@ -16,7 +21,7 @@ class Fishpig_Wordpress_Helper_Associations extends Fishpig_Wordpress_Helper_Abs
 	 */
 	public function getAssociatedPostsByProduct(Mage_Catalog_Model_Product $product)
 	{
-		if (!($product instanceof Mage_Catalog_Model_Product)) {
+		if (!$this->isConnected() || !($product instanceof Mage_Catalog_Model_Product)) {
 			return false;
 		}
 		
@@ -47,7 +52,7 @@ class Fishpig_Wordpress_Helper_Associations extends Fishpig_Wordpress_Helper_Abs
 	 */
 	public function getAssociatedPostsByCmsPage(Mage_Cms_Model_Page $page)
 	{
-		if (!($page instanceof Mage_Cms_Model_Page)) {
+		if (!$this->isConnected() || !($page instanceof Mage_Cms_Model_Page)) {
 			return false;
 		}
 
@@ -72,7 +77,7 @@ class Fishpig_Wordpress_Helper_Associations extends Fishpig_Wordpress_Helper_Abs
 	 */
 	public function getAssociatedProductsByPost(Fishpig_Wordpress_Model_Post $post)
 	{
-		if (!($post instanceof Fishpig_Wordpress_Model_Post)) {
+		if (!$this->isConnected() || !($post instanceof Fishpig_Wordpress_Model_Post)) {
 			return false;
 		}
 
@@ -139,20 +144,20 @@ class Fishpig_Wordpress_Helper_Associations extends Fishpig_Wordpress_Helper_Abs
 	 */
 	protected function _getAssociations($type, $objectId, $storeId = null, $filter, $return)
 	{
-		if (($typeId = $this->getTypeId($type)) !== false) {
-			if (is_null($storeId)) {
-				$storeId = Mage::app()->getStore()->getId();
-			}
-
-			$select = $this->_getReadAdapter()
-				->select()
-				->from($this->_getTable('wordpress/association'), array($return, 'position'))
-				->where('type_id=?', $typeId)
-				->where($filter . '=?', $objectId)
-				->where('store_id=?', $storeId)
-				->order('position ASC');
-			
-			try {
+		try {
+			if (($typeId = $this->getTypeId($type)) !== false) {
+				if (is_null($storeId)) {
+					$storeId = Mage::app()->getStore()->getId();
+				}
+	
+				$select = $this->_getReadAdapter()
+					->select()
+					->from($this->_getTable('wordpress/association'), array($return, 'position'))
+					->where('type_id=?', $typeId)
+					->where($filter . '=?', $objectId)
+					->where('store_id=?', $storeId)
+					->order('position ASC');
+	
 				if (($results = $this->_getReadAdapter()->fetchAll($select)) !== false) {
 					$associations = array();
 					
@@ -163,9 +168,9 @@ class Fishpig_Wordpress_Helper_Associations extends Fishpig_Wordpress_Helper_Abs
 					return $associations;
 				}
 			}
-			catch (Exception $e) {
-				$this->log($e);
-			}
+		}
+		catch (Exception $e) {
+			$this->log($e);
 		}
 		
 		return array();
@@ -344,12 +349,12 @@ class Fishpig_Wordpress_Helper_Associations extends Fishpig_Wordpress_Helper_Abs
 				'`assoc`.`wordpress_object_id` = `main_table`.`' . $field . '`',
 				'`assoc`.`object_id` = ' . (int)$objectId,
 				'`assoc`.`type_id` = ' . (int)$typeId,
-				$collection->getConnection()->quoteInto('`assoc`.`store_id` IN (?)', $storeId),
+				Mage::getSingleton('core/resource')->getConnection('core_read')->quoteInto('`assoc`.`store_id` IN (?)', $storeId),
 			));
 			
-			$dbname = $collection->getTable('wordpress/association');
+			$dbname = $this->_getTable('wordpress/association');
 
-			if (!Mage::helper('wordpress/config')->getConfigFlag('wordpress/database/is_shared')) {
+			if (!Mage::getStoreConfigFlag('wordpress/database/is_shared')) {
 				$dbname = (string)Mage::getConfig()->getNode('global/resources/default_setup/connection/dbname') . '.' . $dbname;
 			}
 			

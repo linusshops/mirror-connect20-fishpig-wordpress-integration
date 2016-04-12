@@ -36,35 +36,28 @@ class Fishpig_Wordpress_Helper_Shortcode_Youtube extends Fishpig_Wordpress_Helpe
 		if (($shortcodes = $this->_getShortcodes($content)) !== false) {
 			foreach($shortcodes as $shortcode) {
 				$params = $shortcode->getParams();
-				$code = substr($params->getUrl(), strpos($params->getUrl(), '?v=')+3);
 				
-				$urlParams = $params->getData();				
-				unset($urlParams['url']);
+				// Parse the URLs querystring
+				parse_str(parse_url($params->getUrl(), PHP_URL_QUERY), $queryString);
 				
-				$url = 'http://www.youtube.com/v/' . $code . '?fs=1&amp;hl=en_US&amp;' . http_build_query($urlParams, '', '&amp;');
+				// Remove the URL from the params
+				$params->unsetData('url');
+				
+				// Merge params with query string params
+				$params = array_merge($params->getData(), $queryString);
 
-				if (!$params->getW() && !$params->getH()) {
-					$sizes = array('width' => 480, 'height' => 385);
-				}
-				else if ($params->getW() && $params->getH()) {
-					$sizes = array('width' => $params->getW(), 'height' => $params->getH());
-				}
-				else if (!$params->getW()) {
-					$sizes = array('height' => $params->getH());
-				}
-				else {
-					$sizes = array('width' => $params->getW());
-				}
+				$url = 'https://www.youtube.com/embed/' . $params['v'];
 				
-				$sizeStr = '';
-				
-				foreach($sizes as $key => $value) {
-					$sizeStr .= ' ' . $key . '="' . $value . '"';
-				}
+				// Remove the v code from the params
+				unset($params['v']);
 
-				$html = sprintf($this->_getHtmlString(), $sizeStr, $url, $url, $sizeStr);
+				$url = rtrim($url . '?' . http_build_query($params), '?');
 
-				$content = str_replace($shortcode->getHtml(), $html, $content);
+				$content = str_replace(
+					$shortcode->getHtml(), 
+					$this->_getYoutubeEmbedHtml($url, isset($params['w']) ? $params['w'] : null, isset($params['h']) ? $params['h'] : null),
+					$content
+				);
 			}
 		}
 	}
@@ -74,14 +67,14 @@ class Fishpig_Wordpress_Helper_Shortcode_Youtube extends Fishpig_Wordpress_Helpe
 	 *
 	 * @return string
 	 */
-	protected function _getHtmlString()
+	protected function _getYoutubeEmbedHtml($src, $width = null, $height = null)
 	{
-		return '	<object %s>
-		<param name="movie" value="%s"></param>
-		<param name="allowFullScreen" value="true"></param>
-		<param name="allowscriptaccess" value="always"></param>
-		<embed src="%s" type="application/x-shockwave-flash" wmode="transparent" allowscriptaccess="always" allowfullscreen="true" %s></embed>
-	</object>';
+		return sprintf(
+			'<iframe width="%s" height="%s" src="%s" frameborder="0" allowfullscreen></iframe>',
+			$width ? $width : 560,
+			$height ? $height : 315,
+			$src
+		);
 	}
 
 	/**
@@ -94,8 +87,6 @@ class Fishpig_Wordpress_Helper_Shortcode_Youtube extends Fishpig_Wordpress_Helpe
 		return '=';
 	}
 
-
-	
 	/**
 	 * Retrieve the regex pattern for the raw URL's
 	 *
@@ -103,6 +94,6 @@ class Fishpig_Wordpress_Helper_Shortcode_Youtube extends Fishpig_Wordpress_Helpe
 	 */
 	public function getRawUrlRegex()
 	{
-		return '[\r\n]{1}(http:\/\/www.youtube.com\/watch\?v=[a-z0-9_-]{1,})[\r\n]{1}';
+		return '(http[s]{0,1}:\/\/www.youtube.com\/watch\?.*)';
 	}
 }

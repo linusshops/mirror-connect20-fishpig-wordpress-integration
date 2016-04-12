@@ -32,13 +32,14 @@ class Fishpig_Wordpress_SearchController extends Fishpig_Wordpress_Controller_Ab
 	}
 
 	/**
-	  * Initialise the current category
+	  *
+	  *
 	  */
 	public function indexAction()
 	{
 		$this->_addCustomLayoutHandles(array(
-			'wordpress_search_index',
 			'wordpress_post_list',
+			'wordpress_search_index',
 		));
 		
 		$this->_initLayout();
