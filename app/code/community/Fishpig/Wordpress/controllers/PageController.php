@@ -45,11 +45,19 @@ class Fishpig_Wordpress_PageController extends Fishpig_Wordpress_Controller_Abst
 	public function viewAction()
 	{
 		$page = $this->_initPage();
-		
-		$this->_addCustomLayoutHandles(array(
+		$layoutHandles = array(
 			'wordpress_page_view',
 			'wordpress_page_view_' . $page->getId(),
-		));
+		);
+
+		$buffer = $page->getParentPage();
+		
+		while ($buffer) {
+			$layoutHandles[] = 'wordpress_page_parent_' . $buffer->getId();
+			$buffer = $buffer->getParentPage();
+		}
+		
+		$this->_addCustomLayoutHandles($layoutHandles);
 		
 		$this->_setPageViewTemplate();
 		

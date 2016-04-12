@@ -5,6 +5,36 @@
 # URL:  http://fishpig.co.uk/magento/wordpress-integration/
 ##
 
+26/05/2015 - 3.1.1.30
+- Added social media share buttons to extension
+
+21/05/2015 - 3.1.1.29
+- Added Lightbox functionality
+
+20/05/2015 - 3.1.1.28
+- Fixed issue with XML sitemaps on multi-store
+
+13/04/2015 - 3.1.1.27
+- Added wordpress_page_parent_{{ID}} layout handles for pages
+
+09/03/2015 - 3.1.1.26
+- Stopped XML sitemap being generated when blog disabled for sitemap scope
+
+06/03/2015 - 3.1.1.25
+- Added support for Custom Sidebars plugin
+
+02/03/2015 - 3.1.1.24
+- Added support for the 'List Custom Taxonomy' WordPress plugin/widget
+
+24/02/2015 - 3.1.1.23
+- Fixed issue that broke permalink strings with trailing static strings (eg. .html)
+
+24/02/2015 - 3.1.1.22
+- Fixed update checking system and added config option to disable this
+
+15/01/2015 - 3.1.1.21
+- Added redirect for broken search URLs
+
 04/10/2014 - 3.1.1.18
 - Included a fix for Root when enabling the 'Replace Homepage' option
 

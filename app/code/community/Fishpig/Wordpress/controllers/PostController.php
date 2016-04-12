@@ -124,6 +124,26 @@ class Fishpig_Wordpress_PostController extends Fishpig_Wordpress_Controller_Abst
 	protected function _initPost()
 	{
 		if (($post = Mage::registry('wordpress_post')) !== null) {
+			$previewId = $this->getRequest()->getParam('preview_id');
+
+			if ($previewId === $post->getId()) {
+				$posts = Mage::getResourceModel('wordpress/post_collection')
+					->addFieldToFilter('post_parent', $post->getId())
+					->addPostTypeFilter('revision')
+					->setPageSize(1)
+					->setOrder('post_modified', 'desc')
+					->load();
+				
+				if (count($posts) > 0) {
+					$post = $posts->getFirstItem();
+					
+					Mage::unregister('wordpress_post');
+					Mage::register('wordpress_post', $post);
+					
+					return $post;	
+				}
+			}
+			
 			return $post;
 		}
 
@@ -147,7 +167,9 @@ class Fishpig_Wordpress_PostController extends Fishpig_Wordpress_Controller_Abst
 			}
 		}
 		else if ($postId = $this->getRequest()->getParam('id')) {
-			$post = Mage::getModel('wordpress/post')->load($postId);
+			$post = Mage::getModel('wordpress/post')
+				->setPostType($this->getRequest()->getParam('post_type', 'post'))
+				->load($postId);
 			
 			if ($post->getId() && ($post->canBeViewed() || $isPreview)) {
 				Mage::register('wordpress_post', $post);

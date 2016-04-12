@@ -31,7 +31,11 @@ class Fishpig_Wordpress_Helper_Shortcode_Caption extends Fishpig_Wordpress_Helpe
 			foreach($shortcodes as $shortcode) {
 				$params = $shortcode->getParams();
 				$caption = $params->getCaption() ? sprintf('<p class="wp-caption-text">%s</p>', trim($params->getCaption())) : '';
-				$style = $params->getAlign() != 'center' ? ' style="width:'.($params->getWidth()+10).'px;"' : '';
+				$style = '';
+				
+				if ($params->getWidth()) {
+					$style = $params->getAlign() != 'center' ? ' style="width:'.($params->getWidth()+10).'px;"' : '';
+				}
 
 				$html = array(
 					sprintf('<div id="%s" class="wp-caption %s"%s>', $params->getId(), $params->getAlign(), $style),

@@ -56,7 +56,12 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 
 		if ($results = $this->getParentCategoryIdsByPostIds($postIds)) {
 			$categoryCache = array();
-			$hasCategoryPermalink = strpos(Mage::helper('wordpress/post')->getPermalinkStructure(), '%category%') !== false;
+			
+			$permalinkStructure = $post->getCustomPermalinkStructure()
+				? $post->getCustomPermalinkStructure()
+				: Mage::helper('wordpress/post')->getPermalinkStructure();
+
+			$hasCategoryPermalink = strpos($permalinkStructure, '%category%') !== false;
 			
 			foreach($posts as $post) {
 				foreach($results as $it => $result) {
@@ -64,8 +69,7 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 						$categoryIds = explode(',', $result['category_ids']);
 						 
 						 $post->setCategoryIds($categoryIds);
-						 
-						 
+
 						 if (isset($categoryCache[$categoryIds[0]])) {
 							 $post->setParentCategory($categoryCache[$categoryIds[0]]);
 						 }
@@ -186,9 +190,10 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 	 * Given a $uri, this will retrieve all permalinks that *could* match
 	 *
 	 * @param string $uri = ''
+	 * @param array $postTypes = null
 	 * @return false|array
 	 */
-	public function getPermalinksByUri($uri = '')
+	public function getPermalinksByUri($uri = '', $postTypes = null)
 	{
 		if (Mage::helper('wordpress/post')->permalinkHasTrainingSlash()) {
 			$uri = rtrim($uri, '/') . '/';
@@ -198,7 +203,19 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 		$tokens = Mage::helper('wordpress/post')->getExplodedPermalinkStructure();
 		$filters = array();
 
+		$lastToken = $tokens[count($tokens)-1];
 		
+		# Allow for trailing static strings (eg. .html)
+		if (substr($lastToken, 0, 1) !== '%') {
+			if (substr($uri, -strlen($lastToken)) !== $lastToken) {
+				return false;
+			}
+			
+			$uri = substr($uri, 0, -strlen($lastToken));
+			
+			array_pop($tokens);
+		}
+
 		for($i = 0; $i <= 1; $i++) {
 			if ($i === 1) {
 				$uri = implode('/', array_reverse(explode('/', $uri)));
@@ -234,7 +251,7 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 			}
 		}
 
-		return $this->getPermalinks($filters);
+		return $this->getPermalinks($filters, $postTypes);
 	}
 	
 	/**
@@ -244,15 +261,19 @@ class Fishpig_Wordpress_Model_Resource_Post extends Fishpig_Wordpress_Model_Reso
 	 * @param array $filters = array()
 	 * @return array|false
 	 */
-	public function getPermalinks(array $filters = array())
-	{	
+	public function getPermalinks(array $filters = array(), $postTypes = null)
+	{
+		if (!$postTypes) {
+			$postTypes = array('post');
+		}
+		
 		$tokens = Mage::helper('wordpress/post')->getExplodedPermalinkStructure();
 		$fields = $this->getPermalinkSqlFields();
 		
 		$select = $this->_getReadAdapter()
 			->select()
 			->from(array('main_table' => $this->getMainTable()), array('id' => 'ID', 'permalink' => $this->getPermalinkSqlColumn()))
-			->where('post_type=?', 'post')
+			->where('post_type IN (?)', (array)$postTypes)
 			->where('post_status IN (?)', array('publish', 'protected', 'private'));
 
 		foreach($filters as $field => $value) {

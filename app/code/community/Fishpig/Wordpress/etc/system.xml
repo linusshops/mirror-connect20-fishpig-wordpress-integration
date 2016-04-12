@@ -32,6 +32,13 @@
             				<show_in_website>1</show_in_website>
             				<show_in_store>1</show_in_store>
             			</enabled>
+            			<check_for_updates>
+            				<label>Check for Updates</label>
+							<frontend_type>select</frontend_type>
+							<source_model>adminhtml/system_config_source_yesno</source_model>
+            				<sort_order>6</sort_order>
+            				<show_in_default>1</show_in_default>
+            			</check_for_updates>
             		</fields>            	
             	</module>
             	<database>
@@ -370,6 +377,54 @@
 		        		</autop>
 					</fields>
             	</misc>
+            	<social>
+        			<label>Social Media Buttons</label>
+        			<sort_order>500</sort_order>
+        			<show_in_default>1</show_in_default>
+        			<show_in_website>1</show_in_website>
+        			<show_in_store>1</show_in_store>
+        			<fields>
+        				<enabled>
+        					<label>Enabled</label>
+        					<sort_order>1</sort_order>
+							<frontend_type>select</frontend_type>
+							<source_model>adminhtml/system_config_source_yesno</source_model>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>1</show_in_store>     
+        				</enabled>
+        				<service>
+        					<label>Service</label>
+        					<sort_order>31</sort_order>
+							<frontend_type>select</frontend_type>
+							<source_model>wordpress/system_config_source_social_media_service</source_model>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>1</show_in_store>     
+							<depends><enabled>1</enabled></depends>
+        				</service>
+        				<head_html>
+        					<label>Head Code</label>
+        					<comment>Enter code added to head of page</comment>
+        					<sort_order>32</sort_order>
+							<frontend_type>editor</frontend_type>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>1</show_in_store>     
+							<depends><enabled>1</enabled></depends>
+        				</head_html>
+        				<buttons_html>
+							<label>Buttons Code</label>
+        					<comment>Enter the buttons code</comment>
+        					<sort_order>33</sort_order>
+							<frontend_type>editor</frontend_type>
+							<show_in_default>1</show_in_default>
+							<show_in_website>1</show_in_website>
+							<show_in_store>1</show_in_store>     
+							<depends><enabled>1</enabled></depends>
+        				</buttons_html>
+					</fields>
+            	</social>
             </groups>
         </wordpress>
     </sections>

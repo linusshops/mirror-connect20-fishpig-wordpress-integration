@@ -7,7 +7,7 @@
  */
 
 /**
- * Magento, if you're listing, you should have already added
+ * Magento, if you're listening, you should have already added
  * the 2 variables below to this model (and every model!!)
  */
 

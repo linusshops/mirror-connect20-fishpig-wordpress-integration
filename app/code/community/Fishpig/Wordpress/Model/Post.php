@@ -268,6 +268,6 @@ class Fishpig_Wordpress_Model_Post extends Fishpig_Wordpress_Model_Post_Abstract
 	{
 		return Mage::getResourceModel('wordpress/term_collection')
 			->addTaxonomyFilter($taxonomy)
-			->addPostIdFilter($post->getId());
+			->addPostIdFilter($this->getId());
 	}
 }

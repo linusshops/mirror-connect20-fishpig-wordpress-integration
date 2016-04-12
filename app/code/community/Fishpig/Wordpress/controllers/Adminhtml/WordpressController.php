@@ -55,7 +55,7 @@ class Fishpig_Wordpress_Adminhtml_WordpressController extends Mage_Adminhtml_Con
 
 		try {
 			if (($latest = Mage::app()->getCache()->load($cacheKey)) === false) {
-				$response = Mage::helper('wordpress/system')->makeHttpPostRequest(
+				$response = Mage::helper('wordpress/system')->makeHttpGetRequest(
 					self::URL_RELEASES
 				);
 				

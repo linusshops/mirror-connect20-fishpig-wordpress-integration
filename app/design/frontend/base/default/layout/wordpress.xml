@@ -50,6 +50,7 @@
 		<reference name="head">
 			<action method="addCss" ifconfig="wordpress/misc/include_css"><style>wordpress/styles.css</style></action>
 			<action method="addJs"><script>fishpig/wordpress/search.js</script></action>
+			<action method="addJs"><script>fishpig/wordpress/lightbox.js</script></action>
 		</reference>
 		<reference name="left">
 			<action method="unsetChildren" ifconfig="wordpress/misc/sidebar_left_empty" />

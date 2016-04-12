@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Fishpig_Wordpress>
-            <version>3.1.1.18</version>
+            <version>3.1.1.30</version>
         </Fishpig_Wordpress>
     </modules>
     <global>
@@ -201,6 +201,7 @@
 		<wordpress>
 			<module>
 				<enabled>1</enabled>
+				<check_for_updates>1</check_for_updates>
 			</module>
 			<database>
 				<is_shared>1</is_shared>
@@ -272,6 +273,7 @@
 				<calendar><block>sidebar_widget_calendar</block></calendar>
 				<categoryposts><block>sidebar_widget_posts</block><template>wordpress/sidebar/widget/categoryposts.phtml</template></categoryposts>
 				<widget_sp_image><block>sidebar_widget_image</block></widget_sp_image>
+				<lc_taxonomy><block>sidebar_widget_taxonomy</block><template>wordpress/sidebar/widget/taxonomy.phtml</template></lc_taxonomy>
 			</widgets>
 		</sidebar>
 		<post>

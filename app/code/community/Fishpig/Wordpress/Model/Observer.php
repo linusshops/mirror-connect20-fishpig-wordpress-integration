@@ -78,23 +78,27 @@ class Fishpig_Wordpress_Model_Observer extends Varien_Object
 	}
 
 	/**
-	 * Inject links into the Magento topmenu
+	 * Inject links into the Magento XML sitemap
 	 *
 	 * @param Varien_Data_Tree_Node $topmenu
 	 * @return bool
 	 */	
 	public function injectXmlSitemapLinksObserver(Varien_Event_Observer $observer)
 	{
-		if (!$this->_observerCanRun(__METHOD__)) {
-			return false;
-		}
-
 		$sitemap = $observer
 			->getEvent()
 				->getSitemap();
 
+		if (!$this->_observerCanRun(__METHOD__ . $sitemap->getStoreId())) {
+			return false;
+		}
+
 		$appEmulation = Mage::getSingleton('core/app_emulation');
 		$initialEnvironmentInfo = $appEmulation->startEnvironmentEmulation($sitemap->getStoreId());
+
+		if (!Mage::getStoreConfigFlag('wordpress/module/enabled', $sitemap->getStoreId())) {
+			return false;
+		}
 
 		$sitemapFilename = Mage::getBaseDir() . '/' . ltrim($sitemap->getSitemapPath() . $sitemap->getSitemapFilename(), '/' . DS);
 		

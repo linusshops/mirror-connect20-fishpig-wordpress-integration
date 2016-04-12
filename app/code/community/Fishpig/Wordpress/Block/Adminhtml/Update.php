@@ -39,18 +39,20 @@ class Fishpig_Wordpress_Block_Adminhtml_Update extends Mage_Core_Block_Text
 	 */
 	protected function _beforeToHtml()
 	{
-		$current = str_replace('.', '_', Mage::helper('wordpress/system')->getExtensionVersion());
-
-		$text = implode('', array(
-			'<script type="text/javascript">',
-				sprintf("var WP_VERSION_LATEST = '%s';", $latestVersion = Mage::app()->getCache()->load('wordpress_integration_update' . $current)),
-				sprintf("var WP_VERSION_CURRENT = '%s';", Mage::helper('wordpress/system')->getExtensionVersion()),
-				sprintf("var WP_VERSION_LOOKUP_URL = '%s';", $this->getUrl('adminhtml/wordpress/checkVersion')),
-				'new fishpig.WP.Update();',
-			'</script>',
-		));
-		
-		$this->setText($text);
+		if (Mage::getStoreConfigFlag('wordpress/module/check_for_updates')) {
+			$current = str_replace('.', '_', Mage::helper('wordpress/system')->getExtensionVersion());
+	
+			$text = implode('', array(
+				'<script type="text/javascript">',
+					sprintf("var WP_VERSION_LATEST = '%s';", $latestVersion = Mage::app()->getCache()->load('wordpress_integration_update' . $current)),
+					sprintf("var WP_VERSION_CURRENT = '%s';", Mage::helper('wordpress/system')->getExtensionVersion()),
+					sprintf("var WP_VERSION_LOOKUP_URL = '%s';", $this->getUrl('adminhtml/wordpress/checkVersion')),
+					'new fishpig.WP.Update();',
+				'</script>',
+			));
+			
+			$this->setText($text);
+		}
 		
 		return parent::_beforeToHtml();
 	}

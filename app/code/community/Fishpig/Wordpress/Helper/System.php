@@ -31,8 +31,8 @@ class Fishpig_Wordpress_Helper_System extends Fishpig_Wordpress_Helper_Abstract
 				$this->applyTest('_validatePlugins', $results, array());
 				$this->applyTest('_validatePermalinks', $results);
 				$this->applyTest('_validateHtaccess', $results);
-				$this->applyTest('_upsellCustomerSynchronisation', $results);
-				$this->applyTest('_upsellReCaptcha', $results);
+#				$this->applyTest('_upsellCustomerSynchronisation', $results);
+#				$this->applyTest('_upsellReCaptcha', $results);
 			}
 		}
 

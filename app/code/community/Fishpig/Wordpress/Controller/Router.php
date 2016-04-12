@@ -98,6 +98,7 @@ class Fishpig_Wordpress_Controller_Router extends Fishpig_Wordpress_Controller_R
 		$this->addRoute(array('/^([1-2]{1}[0-9]{3})\/([0-1]{1}[0-9]{1})$/' => array('year', 'month')), '*/archive/view');
 		$this->addRoute(array('/^([1-2]{1}[0-9]{3})\/([0-1]{1}[0-9]{1})\/([0-3]{1}[0-9]{1})$/' => array('year', 'month', 'day')), '*/archive/view');
 		$this->addRoute(array('/^search\/(.*)$/' => array('s')), '*/search/index');
+		$this->addRoute('search', '*/search/index', array('redirect_broken_url' => 1)); # Fix broken search URLs
 		$this->addRoute('/^index.php/i', '*/index/forward');
 		$this->addRoute('/^wp-content\/(.*)/i', '*/index/forwardFile');
 		$this->addRoute('/^wp-includes\/(.*)/i', '*/index/forwardFile');
@@ -170,7 +171,7 @@ class Fishpig_Wordpress_Controller_Router extends Fishpig_Wordpress_Controller_R
 
 		if (($routes = $categoryModel->getAllUris()) !== false) {
 			foreach($routes as $routeId => $route) {
-				if (strpos($route, $base) === 0) {
+				if ($base && strpos($route, $base) === 0) {
 					$route = substr($route, strlen($base));
 				}
 

@@ -72,7 +72,6 @@ class Fishpig_Wordpress_Helper_Shortcode_Gallery extends Fishpig_Wordpress_Helpe
 					->setLink($args->getLink())
 					->setGalleryIt(($it+1))
 					->setTemplate('wordpress/shortcode/gallery.phtml')
-					->setAfterGalleryScript(Mage::helper('wp_addon_lightboxgallery')->getAfterGalleryScript($it+1))
 					->toHtml();
 
 				$content = str_replace($shortcode->getHtml(), $html, $content);

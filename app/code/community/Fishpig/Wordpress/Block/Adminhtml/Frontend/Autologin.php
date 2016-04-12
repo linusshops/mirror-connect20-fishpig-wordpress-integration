@@ -25,7 +25,7 @@ class Fishpig_Wordpress_Block_Adminhtml_Frontend_Autologin extends Mage_Adminhtm
 	{
 		$version = Mage::getVersion();
 		
-		if (version_compare($version, '1.4.2.0', '<') && version_compare($version, '1.3.0.0', '>')) {
+		if (version_compare($version, '1.5.9.9', '<') && version_compare($version, '1.3.0.0', '>')) {
 			if (self::$_singleton === false) {
 				self::$_singleton = true;
 

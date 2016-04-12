@@ -9,12 +9,39 @@
 class Fishpig_Wordpress_Helper_Post extends Fishpig_Wordpress_Helper_Abstract
 {
 	/**
+	 * Get the temporary permalink structure
+	 *
+	 * @return string
+	 */
+	public function getTemporaryPermalinkStructure()
+	{
+		return $this->_cached('temporary_permalink_structure');
+	}
+	
+	/**
+	 * Set the temporary permalink structure
+	 *
+	 * @param string $structure
+	 * @return $this
+	 */
+	public function setTemporaryPermalinkStructure($structure)
+	{
+		$this->_cache('temporary_permalink_structure', $structure);
+
+		return $this;
+	}
+	
+	/**
 	 * Get the permalink structure as a string
 	 *
 	 * @return string
 	 */
 	public function getPermalinkStructure()
 	{
+		if ($temporaryStructure = $this->getTemporaryPermalinkStructure()) {
+			return $temporaryStructure;
+		}
+
 		$cacheKey = 'permalink_structure';
 		
 		if ($this->_isCached($cacheKey)) {
@@ -45,8 +72,10 @@ class Fishpig_Wordpress_Helper_Post extends Fishpig_Wordpress_Helper_Abstract
 	 */
 	public function getExplodedPermalinkStructure()
 	{
-		$cacheKey = 'permalink_structure_exploded';
-		
+		$cacheKey = $this->getTemporaryPermalinkStructure()
+			? 'temporary_permalink_structure_exploded'
+			: 'permalink_structure_exploded';
+
 		if ($this->_isCached($cacheKey)) {
 			return $this->_cached($cacheKey);
 		}
@@ -313,27 +342,5 @@ class Fishpig_Wordpress_Helper_Post extends Fishpig_Wordpress_Helper_Abstract
 	public function permalinkHasTrainingSlash()
 	{
 		return substr($this->getWpOption('permalink_structure'), -1) == '/';
-	}
-	
-	
-	/**
-	 * Deprecated
-	 */
-	protected function _getRawPermalinkStructure()
-	{
-		return $this->getPermalinkStructure();
-	}
-
-	/**
-	 * Deprecated
-	 */
-	protected function _getPermalinkStructure()
-	{
-		return $this->getPermalinkStructure();
-	}
-	
-	protected function _getExplodedPermalinkStructure()
-	{
-		return $this->getExplodedPermalinkStructure();
 	}
 }

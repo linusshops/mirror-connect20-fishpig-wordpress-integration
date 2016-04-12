@@ -172,6 +172,9 @@ abstract class Fishpig_Wordpress_Controller_Abstract extends Mage_Core_Controlle
 		
 		$this->_renderTitles();
 
+
+		Mage::helper('wordpress/social')->addCodeToHead();
+		
 		return parent::renderLayout($output);
 	}
 
