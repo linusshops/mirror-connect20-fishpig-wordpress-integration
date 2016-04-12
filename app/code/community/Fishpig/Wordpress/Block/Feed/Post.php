@@ -18,7 +18,7 @@ class Fishpig_Wordpress_Block_Feed_Post extends Fishpig_Wordpress_Block_Feed_Abs
 	{
 		$posts = Mage::getSingleton('core/layout')->createBlock($this->getSourceBlock())
 			->getPostCollection();
-
+	
 		$this->_prepareItemCollection($posts);
 
 		foreach($posts as $post) {

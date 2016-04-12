@@ -5,15 +5,21 @@
  * @license     http://fishpig.co.uk/license.txt
  * @author      Ben Tideswell <help@fishpig.co.uk>
  */
-	
+
 	$this->startSetup();
 
-	try {
+	try {	
+		// Delete old autologin table
+		$this->getConnection()->query("DROP TABLE IF EXISTS {$this->getTable('wordpress_autologin')}");
+		
+		// Check for association tables
 		Mage::helper('wordpress/associations')->checkForTables();
+		
+		// Clean duplicate users (old CS error)
+		Mage::getResourceModel('wordpress/user')->cleanDuplicates();
 	}
 	catch (Exception $e) {
 		Mage::helper('wordpress')->log($e);
-		throw $e;
 	}
-	
+
 	$this->endSetup();
